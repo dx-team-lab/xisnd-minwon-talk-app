@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "project-1",
+      "description": "City construction site at dusk",
+      "imageUrl": "https://picsum.photos/seed/const1/800/400",
+      "imageHint": "construction site"
+    },
+    {
+      "id": "project-2",
+      "description": "Modern apartment building under construction",
+      "imageUrl": "https://picsum.photos/seed/const2/800/400",
+      "imageHint": "building construction"
+    },
+    {
+      "id": "project-3",
+      "description": "Industrial zone infrastructure work",
+      "imageUrl": "https://picsum.photos/seed/const3/800/400",
+      "imageHint": "industrial work"
+    }
+  ]
 }
