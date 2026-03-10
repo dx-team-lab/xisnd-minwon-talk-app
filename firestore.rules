@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * MINWON COMMUNITY - SECURITY RULES PHILOSOPHY
+     *
+     * Core Philosophy: 
+     * This ruleset implements a robust, performant authorization model designed for high-scale 
+     * civil complaint management. It prioritizes "Authorization Independence" by using 
+     * denormalization and dedicated role collections (DBAC) to avoid expensive cross-document 
+     * lookups (get() calls) during rule evaluation.
+     *
+     * Data Structure:
+     * - /users/{userId}: Private user profiles.
+     * - /roles_admin, /roles_manager: Database-wide role flags via document existence.
+     * - /projects/{projectId}: Collaborative containers for complaints.
+     * - /projects/{projectId}/complaints/{complaintId}: Project-scoped complaints with 
+     *   denormalized project ownership data.
+     * - /cases, /response_plans: Global reference data for all authenticated users.
+     *
+     * Key Security Decisions:
+     * 1. DBAC Pattern: Admin and Manager roles are determined by the existence of a 
+     *    document in specific top-level collections, enabling fast 'exists()' checks.
+     * 2. Denormalization for Performance: Complaints contain copies of 'projectMemberIds' 
+     *    and 'projectOwnerId' to allow atomic authorization without reading the parent project.
+     * 3. Prototyping Flexibility: Rules enforce strict identity and relationship 
+     *    integrity (who owns what) but remain agnostic to specific data types and 
+     *    content schemas to allow for rapid UI/UX iteration.
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    function isManager() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_manager/$(request.auth.uid));
+    }
+
+    function isProjectMember(memberIds) {
+      return isSignedIn() && request.auth.uid in memberIds;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for user profile documents. Restricted to the individual user.
+     * @path /users/{userId}
+     * @allow (get) Authenticated user 'user123' reading their own profile.
+     * @deny (list) User 'user123' attempting to list all user profiles.
+     * @principle Enforces path-based ownership and relational integrity.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      // Deny listing all user profiles as per description.
+      allow list: if false; 
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description DBAC flag for administrators. existence of UID here grants admin rights.
+     * @path /roles_admin/{adminId}
+     * @allow (get) Any authenticated user checking admin status for logic.
+     * @deny (create) A standard user trying to make themselves an admin.
+     * @principle Role-Based Access Control via document existence lookups.
+     */
+    match /roles_admin/{adminId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description DBAC flag for managers. Managed by administrators.
+     * @path /roles_manager/{managerId}
+     * @allow (get) Any authenticated user checking manager status.
+     * @deny (delete) A manager trying to delete another manager's role.
+     * @principle Tiered administrative control over system roles.
+     */
+    match /roles_manager/{managerId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Construction projects shared among specific members.
+     * @path /projects/{projectId}
+     * @allow (list) A member 'user123' querying projects where their ID is in memberIds.
+     * @deny (update) An authenticated user who is NOT a member of the project.
+     * @principle Shared access model using UID arrays for group collaboration.
+     */
+    match /projects/{projectId} {
+      allow get, list: if isSignedIn() && (isProjectMember(resource.data.memberIds) || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if resource != null && (isProjectMember(resource.data.memberIds) || isAdmin());
+      allow delete: if resource != null && isAdmin();
+    }
+
+    /**
+     * @description Complaints filed against specific projects. Uses denormalized auth data.
+     * @path /projects/{projectId}/complaints/{complaintId}
+     * @allow (get) A project member viewing a complaint linked to their project.
+     * @deny (create) A user attempting to create a complaint they don't own.
+     * @principle Authorization independence via denormalized project member lists.
+     */
+    match /projects/{projectId}/complaints/{complaintId} {
+      allow get, list: if isSignedIn() && (isProjectMember(resource.data.projectMemberIds) || resource.data.createdBy == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if resource != null && (resource.data.createdBy == request.auth.uid || isAdmin() || isManager());
+      allow delete: if resource != null && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    /**
+     * @description Global compensation cases and precedents. Readable by all users.
+     * @path /cases/{caseId}
+     * @allow (list) Any logged-in user browsing historical compensation cases.
+     * @deny (create) A standard user trying to add a new compensation case.
+     * @principle Public-read for authenticated users with role-restricted writes.
+     */
+    match /cases/{caseId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    /**
+     * @description Official guidelines for responding to complaints.
+     * @path /response_plans/{responsePlanId}
+     * @allow (get) Any user reading the steps for 'Initial Reception'.
+     * @deny (update) A manager trying to edit the official response protocols.
+     * @principle Strict administrative control over global system guidelines.
+     */
+    match /response_plans/{responsePlanId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
