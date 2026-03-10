@@ -23,7 +23,7 @@
       "description": "시스템 설정에서 관리하는 대응 방안 가이드",
       "properties": {
         "id": { "type": "string" },
-        "region": { "type": "string", "enum": ["주거지역", "상업지역", "공업지역"] },
+        "region": { "type": "string", "enum": ["주거지역", "상업지역", "공업지역", "혼합지역"] },
         "phase": { "type": "string", "enum": ["착수전", "철거", "토공", "골조", "마감", "준공이후"] },
         "type": { 
           "type": "array", 
@@ -44,7 +44,7 @@
       "description": "시스템 설정에서 관리하는 보상 사례",
       "properties": {
         "id": { "type": "string" },
-        "region": { "type": "string", "enum": ["주거지역", "상업지역", "공업지역"] },
+        "region": { "type": "string", "enum": ["주거지역", "상업지역", "공업지역", "혼합지역"] },
         "phase": { "type": "string", "enum": ["착수전", "철거", "토공", "골조", "마감", "준공이후"] },
         "type": { 
           "type": "array", 
