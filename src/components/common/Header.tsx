@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -8,7 +9,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, LogOut, User, Settings, Loader2, Users } from 'lucide-react';
+import { ChevronDown, LogOut, User, Settings, Loader2, Users, SlidersHorizontal } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -20,11 +21,15 @@ export default function Header() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  // 관리자 권한 확인을 위해 roles_admin 컬렉션 조회
   const adminsQuery = useMemoFirebase(() => collection(db, 'roles_admin'), [db]);
+  const managersQuery = useMemoFirebase(() => collection(db, 'roles_manager'), [db]);
+  
   const { data: admins } = useCollection(adminsQuery);
+  const { data: managers } = useCollection(managersQuery);
   
   const isAdmin = user && admins ? admins.some(a => a.id === user.uid) : false;
+  const isManager = user && managers ? managers.some(m => m.id === user.uid) : false;
+  const hasSettingsAccess = isAdmin || isManager;
 
   const handleLogout = async () => {
     try {
@@ -44,8 +49,7 @@ export default function Header() {
             <span className="text-xl font-headline font-bold text-primary">민원 커뮤니티</span>
           </Link>
           
-          {/* 관리자 권한이 있는 경우에만 설정 메뉴 표시 */}
-          {isAdmin && (
+          {hasSettingsAccess && (
             <nav className="hidden md:flex items-center gap-6">
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors outline-none">
@@ -54,14 +58,20 @@ export default function Header() {
                   <ChevronDown className="h-4 w-4 ml-0.5" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/users" className="flex w-full items-center gap-2 cursor-pointer">
+                        <Users className="h-4 w-4" />
+                        사용자 관리
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/users" className="flex w-full items-center gap-2 cursor-pointer">
-                      <Users className="h-4 w-4" />
-                      사용자 관리
+                    <Link href="/dashboard/settings/system" className="flex w-full items-center gap-2 cursor-pointer">
+                      <SlidersHorizontal className="h-4 w-4" />
+                      시스템 설정
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">시스템 설정</DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">알림 설정</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </nav>

@@ -1,10 +1,10 @@
 
-"use client";
+'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
 import Header from '@/components/common/Header';
 import HeroBanner from '@/components/dashboard/HeroBanner';
 import FilterBar from '@/components/dashboard/FilterBar';
@@ -21,12 +21,48 @@ export default function DashboardPage() {
   const auth = useAuth();
   const router = useRouter();
 
+  const [filters, setFilters] = useState<Record<string, string[]>>({
+    region: [],
+    phase: [],
+    type: [],
+    compensation: []
+  });
+
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, 'users', user.uid);
   }, [db, user]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+
+  // Firestore Data Fetching
+  const guidesQuery = useMemoFirebase(() => query(collection(db, 'responseGuides'), orderBy('createdAt', 'desc')), [db]);
+  const casesQuery = useMemoFirebase(() => query(collection(db, 'caseExamples'), orderBy('createdAt', 'desc')), [db]);
+  
+  const { data: rawGuides, isLoading: isGuidesLoading } = useCollection(guidesQuery);
+  const { data: rawCases, isLoading: isCasesLoading } = useCollection(casesQuery);
+
+  // Filter Logic
+  const filteredGuides = useMemo(() => {
+    if (!rawGuides) return [];
+    return rawGuides.filter(g => {
+      const matchRegion = filters.region.length === 0 || filters.region.includes(g.region);
+      const matchPhase = filters.phase.length === 0 || filters.phase.includes(g.phase);
+      const matchType = filters.type.length === 0 || filters.type.includes(g.type);
+      return matchRegion && matchPhase && matchType;
+    });
+  }, [rawGuides, filters]);
+
+  const filteredCases = useMemo(() => {
+    if (!rawCases) return [];
+    return rawCases.filter(c => {
+      const matchRegion = filters.region.length === 0 || filters.region.includes(c.region);
+      const matchPhase = filters.phase.length === 0 || filters.phase.includes(c.phase);
+      const matchType = filters.type.length === 0 || filters.type.includes(c.type);
+      const matchComp = filters.compensation.length === 0 || filters.compensation.includes(c.requestType);
+      return matchRegion && matchPhase && matchType && matchComp;
+    });
+  }, [rawCases, filters]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -39,6 +75,30 @@ export default function DashboardPage() {
     router.push('/');
   };
 
+  const handleFilterChange = (key: string, value: string) => {
+    if (value === '전체') {
+      setFilters(prev => ({ ...prev, [key]: [] }));
+      return;
+    }
+    if (!filters[key].includes(value)) {
+      setFilters(prev => ({
+        ...prev,
+        [key]: [...prev[key], value]
+      }));
+    }
+  };
+
+  const removeFilter = (key: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: prev[key].filter(v => v !== value)
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters({ region: [], phase: [], type: [], compensation: [] });
+  };
+
   if (isUserLoading || isProfileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F0F4FF]">
@@ -47,7 +107,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Check for admin approval
   if (user && userProfile && !userProfile.approved) {
     return (
       <div className="min-h-screen bg-[#F0F4FF] flex flex-col items-center justify-center p-4">
@@ -80,10 +139,16 @@ export default function DashboardPage() {
       <Header />
       <HeroBanner />
       <main className="container mx-auto px-4 py-8 space-y-12">
-        <FilterBar />
+        <FilterBar 
+          filters={filters} 
+          onFilterChange={handleFilterChange} 
+          onRemoveFilter={removeFilter} 
+          onReset={resetFilters}
+          resultCount={filteredGuides.length + filteredCases.length}
+        />
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-          <ResponsePlanTable />
-          <CaseTable />
+          <ResponsePlanTable data={filteredGuides} isLoading={isGuidesLoading} />
+          <CaseTable data={filteredCases} isLoading={isCasesLoading} />
         </div>
       </main>
     </div>

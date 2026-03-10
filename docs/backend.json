@@ -1,293 +1,62 @@
+
 {
   "entities": {
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user account in the Minwon Community application, primarily for authentication and authorization.",
+      "description": "Represents a user account in the Minwon Community application.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the User entity, sourced from Firebase Authentication."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address, used for login and communication.",
-          "format": "email"
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The user's preferred display name."
-        },
-        "role": {
-          "type": "string",
-          "description": "The assigned role of the user within the system (e.g., 'admin', 'manager', 'viewer')."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the user account was created.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string" },
+        "approved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "email",
-        "displayName",
-        "role",
-        "createdAt"
-      ]
+      "required": ["id", "email", "displayName", "role", "createdAt"]
     },
-    "Project": {
+    "ResponseGuide": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Project",
+      "title": "ResponseGuide",
       "type": "object",
-      "description": "Represents a construction project where civil complaints might arise, serving as a container for related complaints and cases.",
+      "description": "시스템 설정에서 관리하는 대응 방안 가이드",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Project entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the construction project."
-        },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL of the main image representing the project for visual identification.",
-          "format": "uri"
-        },
-        "status": {
-          "type": "string",
-          "description": "The current operational status of the project (e.g., '진행중', '유보', '완료')."
-        },
-        "region": {
-          "type": "string",
-          "description": "The geographical region or zone where the project is located (e.g., '주거지역', '상업지역')."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the project record was created.",
-          "format": "date-time"
-        },
-        "memberIds": {
-          "type": "array",
-          "description": "References to User IDs who are members or collaborators on this project. (Relationship: User N:N Project)",
-          "items": {
-            "type": "string"
-          }
-        }
+        "id": { "type": "string" },
+        "region": { "type": "string", "enum": ["주거지역", "상업지역", "공업지역"] },
+        "phase": { "type": "string", "enum": ["착수전", "토공", "골조", "마감"] },
+        "type": { "type": "string", "enum": ["소음", "분진", "진동", "교통", "언론"] },
+        "cause": { "type": "string" },
+        "action": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
       },
-      "required": [
-        "id",
-        "name",
-        "status",
-        "region",
-        "createdAt"
-      ]
+      "required": ["region", "phase", "type", "cause", "action"]
     },
-    "Complaint": {
+    "CaseExample": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Complaint",
+      "title": "CaseExample",
       "type": "object",
-      "description": "Represents a specific civil complaint filed against a construction project, including its details and resolution status.",
+      "description": "시스템 설정에서 관리하는 보상 사례",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Complaint entity."
-        },
-        "region": {
-          "type": "string",
-          "description": "The geographical region associated with where the complaint occurred (e.g., '주거지역', '상업지역')."
-        },
-        "phase": {
-          "type": "string",
-          "description": "The construction phase at which the complaint was registered (e.g., '착수전', '토공', '골조')."
-        },
-        "type": {
-          "type": "string",
-          "description": "The category or nature of the complaint (e.g., '소음', '분진', '진동')."
-        },
-        "title": {
-          "type": "string",
-          "description": "A concise title or summary for the complaint."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed narrative describing the civil complaint."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current resolution status of the complaint (e.g., '접수', '진행중', '종결')."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the complaint record was initially created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the complaint record was last modified.",
-          "format": "date-time"
-        },
-        "createdBy": {
-          "type": "string",
-          "description": "Reference to the User ID who created this complaint. (Relationship: User 1:N Complaint)"
-        },
-        "projectId": {
-          "type": "string",
-          "description": "Reference to the Project ID this complaint is associated with. (Relationship: Project 1:N Complaint)"
-        }
+        "id": { "type": "string" },
+        "region": { "type": "string", "enum": ["주거지역", "상업지역", "공업지역"] },
+        "phase": { "type": "string", "enum": ["착수전", "토공", "골조", "마감"] },
+        "type": { "type": "string", "enum": ["소음", "분진", "진동", "교통", "언론"] },
+        "complainant": { "type": "string" },
+        "requestType": { "type": "string", "enum": ["정신적피해보상", "영업배상", "분쟁조정"] },
+        "compensationStatus": { "type": "string", "enum": ["보상", "미보상"] },
+        "compensationAmount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
       },
-      "required": [
-        "id",
-        "region",
-        "phase",
-        "type",
-        "title",
-        "description",
-        "status",
-        "createdAt",
-        "createdBy",
-        "projectId"
-      ]
-    },
-    "Case": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Case",
-      "type": "object",
-      "description": "Represents a compensation case or a precedent record related to resolved or ongoing civil complaints.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Case entity (compensation case)."
-        },
-        "demandType": {
-          "type": "string",
-          "description": "The type of damage or compensation originally demanded by the complainant (e.g., '재산피해보상', '정신적피해보상')."
-        },
-        "compensationType": {
-          "type": "string",
-          "description": "The category of compensation or dispute resolution method applied (e.g., '정신적피해보상', '영업배상', '분쟁조정'). This aligns with the '보상 사례' filter."
-        },
-        "occurredAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the compensation case occurred or was settled.",
-          "format": "date-time"
-        },
-        "progress": {
-          "type": "string",
-          "description": "The current progress status of the compensation case (e.g., '종결', '진행중')."
-        },
-        "details": {
-          "type": "string",
-          "description": "A detailed description of the compensation case, including specific circumstances and outcomes."
-        },
-        "compensationMethod": {
-          "type": "string",
-          "description": "The specific method used for providing compensation (e.g., '근태로', '시설보수', '현물보상')."
-        },
-        "compensationAmount": {
-          "type": "number",
-          "description": "The monetary amount of compensation provided, in Korean Won."
-        },
-        "region": {
-          "type": "string",
-          "description": "The geographical region linked to this compensation case (e.g., '주거지역')."
-        },
-        "phase": {
-          "type": "string",
-          "description": "The construction phase linked to this compensation case (e.g., '골조')."
-        },
-        "type": {
-          "type": "string",
-          "description": "The type of complaint (e.g., '소음', '분진') that led to this compensation case."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the compensation case record was created.",
-          "format": "date-time"
-        },
-        "createdBy": {
-          "type": "string",
-          "description": "Reference to the User ID who recorded this compensation case. (Relationship: User 1:N Case)"
-        }
-      },
-      "required": [
-        "id",
-        "demandType",
-        "compensationType",
-        "occurredAt",
-        "progress",
-        "details",
-        "compensationMethod",
-        "compensationAmount",
-        "region",
-        "phase",
-        "type",
-        "createdAt",
-        "createdBy"
-      ]
-    },
-    "ResponsePlan": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ResponsePlan",
-      "type": "object",
-      "description": "Defines a structured step or action within a comprehensive plan for effectively responding to civil complaints.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ResponsePlan entity (a specific step in a response plan)."
-        },
-        "category": {
-          "type": "string",
-          "description": "The broad category of the response action (e.g., '사전업무', '민원접수', '민원대응')."
-        },
-        "stepNumber": {
-          "type": "number",
-          "description": "A sequential number indicating the order of this step within its specific category."
-        },
-        "title": {
-          "type": "string",
-          "description": "The main title or subject of this response plan step."
-        },
-        "details": {
-          "type": "array",
-          "description": "A list of specific actions, sub-items, or instructions to be followed for this step.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "responsible": {
-          "type": "string",
-          "description": "The role or department responsible for executing this specific response plan step (e.g., 'BM', 'CM', '공사', '공무')."
-        },
-        "order": {
-          "type": "number",
-          "description": "The overall display order of this response plan step, potentially across different categories."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when this response plan step record was created.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "category",
-        "stepNumber",
-        "title",
-        "details",
-        "responsible",
-        "order",
-        "createdAt"
-      ]
+      "required": ["region", "phase", "type", "complainant", "requestType", "compensationStatus"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "structure": [
@@ -295,119 +64,42 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "User profiles, private to each user. The 'role' field in the schema should not be used for authorization in security rules; use dedicated role collections instead.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, matching Firebase Authentication UID."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "User profiles"
         }
       },
       {
         "path": "/roles_admin/{adminId}",
         "definition": {
           "entityName": "role",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Grants administrator privileges. The existence of a document at this path (where adminId is a user's UID) means that user is an admin. Used for DBAC.",
-          "params": [
-            {
-              "name": "adminId",
-              "description": "The unique identifier of the user with admin privileges (Firebase Auth UID)."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Admin privileges"
         }
       },
       {
         "path": "/roles_manager/{managerId}",
         "definition": {
           "entityName": "role",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Grants manager privileges. The existence of a document at this path (where managerId is a user's UID) means that user is a manager. Used for DBAC.",
-          "params": [
-            {
-              "name": "managerId",
-              "description": "The unique identifier of the user with manager privileges (Firebase Auth UID)."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Manager privileges"
         }
       },
       {
-        "path": "/projects/{projectId}",
+        "path": "/responseGuides/{docId}",
         "definition": {
-          "entityName": "Project",
-          "schema": {
-            "$ref": "#/backend/entities/Project"
-          },
-          "description": "Represents construction projects. Includes 'memberIds' array for project-level authorization, allowing project members to access relevant data.",
-          "params": [
-            {
-              "name": "projectId",
-              "description": "The unique identifier of the project."
-            }
-          ]
+          "entityName": "ResponseGuide",
+          "schema": { "$ref": "#/backend/entities/ResponseGuide" },
+          "description": "Global response guides managed by admins"
         }
       },
       {
-        "path": "/projects/{projectId}/complaints/{complaintId}",
+        "path": "/caseExamples/{docId}",
         "definition": {
-          "entityName": "Complaint",
-          "schema": {
-            "$ref": "#/backend/entities/Complaint"
-          },
-          "description": "Civil complaints associated with a specific project. For authorization independence, documents at this path must include denormalized 'projectOwnerId' (string) and 'projectMemberIds' (array of strings) fields, copied from the parent project. 'createdBy' is also used for specific access.",
-          "params": [
-            {
-              "name": "projectId",
-              "description": "The unique identifier of the parent project."
-            },
-            {
-              "name": "complaintId",
-              "description": "The unique identifier of the complaint."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/cases/{caseId}",
-        "definition": {
-          "entityName": "Case",
-          "schema": {
-            "$ref": "#/backend/entities/Case"
-          },
-          "description": "Compensation cases, serving as a global precedent database. Accessible by all authenticated users for reading, and by administrators/managers for writing. Access is also restricted by 'createdBy'.",
-          "params": [
-            {
-              "name": "caseId",
-              "description": "The unique identifier of the compensation case."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/response_plans/{responsePlanId}",
-        "definition": {
-          "entityName": "ResponsePlan",
-          "schema": {
-            "$ref": "#/backend/entities/ResponsePlan"
-          },
-          "description": "Global response plan steps and guidelines. Accessible by all authenticated users for reading, and by administrators for writing.",
-          "params": [
-            {
-              "name": "responsePlanId",
-              "description": "The unique identifier of the response plan step."
-            }
-          ]
+          "entityName": "CaseExample",
+          "schema": { "$ref": "#/backend/entities/CaseExample" },
+          "description": "Global case examples managed by admins"
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed following the core principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs to ensure security, scalability, and debuggability. \n\n**1. Authorization Independence & Denormalization:**\n   *   **Role-Based Access Control (DBAC):** To eliminate hierarchical authorization dependencies (`get()`) for user roles, we decouple roles from the `/users/{userId}` document. Instead, dedicated top-level collections, `/roles_admin/{adminId}` and `/roles_manager/{managerId}`, are introduced. The mere existence of a document at these paths signifies that the `adminId` or `managerId` (which is the user's UID) possesses the respective role. This allows security rules to check for role membership using `exists()` rather than `get().data.role`, making rules atomic and independent of the `/users` document.\n   *   **Project-Complaint Relationship:** For `Complaint` documents, access control is dependent on the associated `Project`. To ensure authorization independence and avoid `get()` calls to the parent `Project` document in security rules, critical authorization context from the `Project` entity is denormalized into each `Complaint` document. Specifically, `projectOwnerId` (the creator/owner of the project) and `projectMemberIds` (an array of UIDs for all project collaborators) should be added to the `Complaint` document. This allows `Complaint` documents to be created, read, updated, or deleted based on their own fields, enabling atomic operations and simplifying rules logic. \n\n**2. Clarity of Intent & Structural Segregation:**\n   *   **Path-Based Ownership:** User-specific data, such as individual user profiles, is stored under `/users/{userId}`, making ownership explicit and simplifying rules. \n   *   **Hierarchical Paths for User-Owned/Project-Related Data:** Complaints, which are inherently tied to specific projects, are structured as a subcollection: `/projects/{projectId}/complaints/{complaintId}`. This clearly indicates their relationship and allows for granular, project-scoped authorization. \n   *   **Homogeneous Security Posture:** Collections are designed such that all documents within them share similar access requirements. For instance:\n      *   `/users/{userId}`: Private to the authenticated user matching `userId`.\n      *   `/roles_admin/{adminId}`, `/roles_manager/{managerId}`: Readable by all authenticated users (for rule evaluation), writable only by existing administrators.\n      *   `/projects/{projectId}`: Accessible by specific `memberIds` or project `ownerId`.\n      *   `/projects/{projectId}/complaints/{complaintId}`: Accessible by project members, project owner, or the complaint's `createdBy` user.\n      *   `/cases/{caseId}` and `/response_plans/{responsePlanId}`: Global collections with public read access for all authenticated users, and restricted write access for `admin` or `manager` roles, making them suitable for shared content like precedents and guidelines.\n\n**3. QAPs (Queries Are Not Filters):**\n   *   The structure supports secure `list` operations by embedding the necessary authorization data directly into the documents or by using dedicated collections for roles.\n   *   For `projects`, client applications can query using `db.collection('projects').where('memberIds', 'array-contains', request.auth.uid)` to retrieve only the projects the user is authorized for. The security rules can then easily validate this query using `request.auth.uid in resource.data.memberIds`.\n   *   For `complaints`, after identifying a `projectId` (e.g., from projects the user is a member of), clients can query `db.collection('projects/{projectId}/complaints').where('projectMemberIds', 'array-contains', request.auth.uid)`. The security rules, leveraging the denormalized `projectMemberIds`, can then enforce access without external `get()` calls.\n   *   Global collections like `cases` and `response_plans` are fully queryable by authenticated users (`allow list: if request.auth != null;`) as their security posture is homogeneous (read-all, write-restricted).\n\nThis design minimizes complex rule logic, prevents cascading authorization failures, and provides a clear, predictable access model essential for a secure and maintainable application."
+    ]
   }
 }

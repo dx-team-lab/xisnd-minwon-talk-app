@@ -1,7 +1,6 @@
 
-"use client";
+'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FILTER_OPTIONS } from '@/lib/constants';
@@ -9,43 +8,15 @@ import { Search, RotateCcw, Download, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
-export default function FilterBar() {
-  const [filters, setFilters] = useState<Record<string, string[]>>({
-    region: [],
-    phase: [],
-    type: [],
-    compensation: []
-  });
+interface FilterBarProps {
+  filters: Record<string, string[]>;
+  onFilterChange: (key: string, value: string) => void;
+  onRemoveFilter: (key: string, value: string) => void;
+  onReset: () => void;
+  resultCount: number;
+}
 
-  const handleSelect = (key: string, value: string) => {
-    if (value === '전체') {
-      setFilters(prev => ({ ...prev, [key]: [] }));
-      return;
-    }
-    if (!filters[key].includes(value)) {
-      setFilters(prev => ({
-        ...prev,
-        [key]: [...prev[key], value]
-      }));
-    }
-  };
-
-  const removeFilter = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: prev[key].filter(v => v !== value)
-    }));
-  };
-
-  const resetFilters = () => {
-    setFilters({
-      region: [],
-      phase: [],
-      type: [],
-      compensation: []
-    });
-  };
-
+export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onReset, resultCount }: FilterBarProps) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border bg-white p-6 shadow-sm">
@@ -60,7 +31,7 @@ export default function FilterBar() {
               <Label className="text-xs font-bold text-slate-500 ml-1">
                 {config.label}
               </Label>
-              <Select onValueChange={(val) => handleSelect(key, val)}>
+              <Select onValueChange={(val) => onFilterChange(key, val)}>
                 <SelectTrigger className="bg-slate-50 border-slate-200">
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
@@ -77,7 +48,7 @@ export default function FilterBar() {
             <Button size="icon" className="bg-primary hover:bg-primary/90 rounded-lg">
               <Search className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={resetFilters} className="rounded-lg">
+            <Button variant="outline" size="icon" onClick={onReset} className="rounded-lg">
               <RotateCcw className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="icon" className="rounded-lg">
@@ -92,7 +63,7 @@ export default function FilterBar() {
             values.map(val => (
               <Badge key={`${key}-${val}`} variant="secondary" className="gap-1.5 py-1 px-3 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 rounded-full">
                 {FILTER_OPTIONS[key as keyof typeof FILTER_OPTIONS].label}: {val}
-                <button onClick={() => removeFilter(key, val)}>
+                <button onClick={() => onRemoveFilter(key, val)}>
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -104,7 +75,7 @@ export default function FilterBar() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold">검색결과 <span className="text-primary">101건</span></span>
+            <span className="text-lg font-bold">검색결과 <span className="text-primary">{resultCount}건</span></span>
           </div>
         </div>
       </div>

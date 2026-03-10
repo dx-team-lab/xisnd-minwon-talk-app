@@ -1,18 +1,7 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * MINWON COMMUNITY - SECURITY RULES PHILOSOPHY
-     *
-     * Core Philosophy: 
-     * This ruleset implements a robust, performant authorization model designed for high-scale 
-     * civil complaint management. It prioritizes "Authorization Independence" by using 
-     * denormalization and dedicated role collections (DBAC) to avoid expensive cross-document 
-     * lookups (get() calls) during rule evaluation.
-     */
-
-    // --- GLOBAL HELPER FUNCTIONS ---
 
     function isSignedIn() {
       return request.auth != null;
@@ -20,10 +9,6 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
     }
 
     function isAdmin() {
@@ -34,74 +19,31 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_manager/$(request.auth.uid));
     }
 
-    function isProjectMember(memberIds) {
-      return isSignedIn() && request.auth.uid in memberIds;
-    }
-
-    // --- COLLECTION RULES ---
-
-    /**
-     * @description Rules for user profile documents. 
-     * 모든 로그인한 사용자는 사용자 목록(이름, 이메일 등)을 볼 수 있도록 list 권한을 허용합니다.
-     */
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create: if isOwner(userId);
-      allow update: if (isExistingOwner(userId) && request.resource.data.id == resource.data.id) || isAdmin();
+      allow update: if (isOwner(userId) && request.resource.data.id == resource.data.id) || isAdmin();
       allow delete: if isAdmin();
     }
 
-    /**
-     * @description DBAC flag for administrators.
-     */
     match /roles_admin/{adminId} {
       allow get, list: if isSignedIn();
-      // 프로토타입 단계에서의 테스트 편의를 위해 로그인한 사용자의 쓰기 권한을 허용합니다.
       allow create, update, delete: if isSignedIn(); 
     }
 
-    /**
-     * @description DBAC flag for managers. Managed by administrators.
-     */
     match /roles_manager/{managerId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
     }
 
-    /**
-     * @description Construction projects shared among specific members.
-     */
-    match /projects/{projectId} {
-      allow get, list: if isSignedIn() && (resource == null || isProjectMember(resource.data.memberIds) || isAdmin());
-      allow create: if isSignedIn();
-      allow update: if resource != null && (isProjectMember(resource.data.memberIds) || isAdmin());
-      allow delete: if resource != null && isAdmin();
-    }
-
-    /**
-     * @description Complaints filed against specific projects.
-     */
-    match /projects/{projectId}/complaints/{complaintId} {
-      allow get, list: if isSignedIn() && (resource == null || isProjectMember(resource.data.projectMemberIds) || resource.data.createdBy == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
-      allow update: if resource != null && (resource.data.createdBy == request.auth.uid || isAdmin() || isManager());
-      allow delete: if resource != null && (resource.data.createdBy == request.auth.uid || isAdmin());
-    }
-
-    /**
-     * @description Global compensation cases and precedents.
-     */
-    match /cases/{caseId} {
-      allow get, list: if isSignedIn();
+    match /responseGuides/{docId} {
+      allow read: if isSignedIn();
       allow create, update, delete: if isAdmin() || isManager();
     }
 
-    /**
-     * @description Official guidelines for responding to complaints.
-     */
-    match /response_plans/{responsePlanId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+    match /caseExamples/{docId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin() || isManager();
     }
   }
 }
