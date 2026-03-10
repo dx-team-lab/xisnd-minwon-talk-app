@@ -30,8 +30,8 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
               <TableRow>
                 <TableHead className="font-bold text-slate-700 text-center w-[80px] border-r">지역</TableHead>
                 <TableHead className="font-bold text-slate-700 text-center w-[80px] border-r">단계</TableHead>
-                <TableHead className="font-bold text-slate-700 text-center w-[120px] border-r">유형</TableHead>
-                <TableHead className="font-bold text-slate-700">민원인</TableHead>
+                <TableHead className="font-bold text-slate-700 text-center w-[100px] border-r">유형</TableHead>
+                <TableHead className="font-bold text-slate-700 w-[150px] border-r">민원인</TableHead>
                 <TableHead className="font-bold text-slate-700">요구사항</TableHead>
                 <TableHead className="font-bold text-slate-700">보상방식</TableHead>
                 <TableHead className="font-bold text-slate-700 text-right">보상금액(원)</TableHead>
@@ -48,23 +48,23 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                       {item.phase}
                     </TableCell>
                     <TableCell className="p-4 border-r">
-                      <div className="flex flex-wrap justify-center gap-1">
+                      <div className="flex flex-col items-center gap-1">
                         {Array.isArray(item.type) ? item.type.map((t: string) => (
-                          <Badge key={t} variant="outline" className="text-[9px] h-4 px-1">{t}</Badge>
-                        )) : <Badge variant="outline" className="text-[9px] h-4 px-1">{item.type}</Badge>}
+                          <Badge key={t} variant="outline" className="text-[9px] h-4 px-1 whitespace-nowrap">{t}</Badge>
+                        )) : <Badge variant="outline" className="text-[9px] h-4 px-1 whitespace-nowrap">{item.type}</Badge>}
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 text-sm font-bold text-slate-700">
+                    <TableCell className="p-4 text-sm font-bold text-slate-700 border-r">
                       {item.complainant}
                     </TableCell>
                     <TableCell className="p-4">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-col gap-1">
                         {Array.isArray(item.requestType) ? item.requestType.map((rt: string) => (
-                          <Badge key={rt} variant="outline" className={cn("whitespace-nowrap font-bold", CASE_BADGE_COLORS[rt] || "")}>
+                          <Badge key={rt} variant="outline" className={cn("whitespace-nowrap font-bold w-fit", CASE_BADGE_COLORS[rt] || "")}>
                             {rt}
                           </Badge>
                         )) : (
-                          <Badge variant="outline" className={cn("whitespace-nowrap font-bold", CASE_BADGE_COLORS[item.requestType] || "")}>
+                          <Badge variant="outline" className={cn("whitespace-nowrap font-bold w-fit", CASE_BADGE_COLORS[item.requestType] || "")}>
                             {item.requestType}
                           </Badge>
                         )}
