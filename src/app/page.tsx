@@ -1,25 +1,64 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useAuth, useUser, initiateEmailSignIn, initiateEmailSignUp } from '@/firebase';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberEmail, setRememberEmail] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const heroImage = PlaceHolderImages.find(img => img.id === 'project-2'); // 건물이 올라가는 이미지로 변경
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user && !isUserLoading) {
+      router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    setIsSubmitting(true);
+    try {
+      if (isLogin) {
+        initiateEmailSignIn(auth, email, password);
+      } else {
+        initiateEmailSignUp(auth, email, password);
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      setIsSubmitting(false);
+    }
+  };
+
+  const heroImage = PlaceHolderImages.find(img => img.id === 'project-2');
+
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F0F4FF]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F0F4FF] items-center justify-center p-4">
-      {/* Main Container */}
       <div className="w-full max-w-[1000px] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
         
         {/* Left Side: Promotional Content */}
@@ -46,16 +85,17 @@ export default function AuthPage() {
             </p>
           </div>
           
-          {/* Decorative Elements */}
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-50" />
         </div>
 
         {/* Right Side: Auth Form */}
         <div className="w-full md:w-1/2 p-12 flex flex-col justify-center border-l border-slate-50">
-          <div className="max-w-md mx-auto w-full space-y-8">
+          <form onSubmit={handleAuth} className="max-w-md mx-auto w-full space-y-8">
             <div className="text-center md:text-left">
               <h2 className="text-2xl font-bold text-slate-900">{isLogin ? "환영합니다!" : "회원가입"}</h2>
-              <p className="text-slate-500 mt-2 text-sm">민원 커뮤니티 서비스 이용을 위해 로그인하세요.</p>
+              <p className="text-slate-500 mt-2 text-sm">
+                {isLogin ? "민원 커뮤니티 서비스 이용을 위해 로그인하세요." : "새로운 계정을 만들고 서비스를 시작하세요."}
+              </p>
             </div>
 
             <div className="space-y-6">
@@ -66,8 +106,12 @@ export default function AuthPage() {
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <Input
                     id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="이메일을 입력하세요"
                     className="pl-12 h-14 rounded-2xl border-slate-200 focus:ring-primary focus:border-primary transition-all"
+                    required
                   />
                 </div>
               </div>
@@ -80,8 +124,11 @@ export default function AuthPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="비밀번호를 입력하세요"
                     className="pl-12 pr-12 h-14 rounded-2xl border-slate-200 focus:ring-primary focus:border-primary transition-all"
+                    required
                   />
                   <button
                     type="button"
@@ -93,7 +140,6 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              {/* Form Helpers */}
               {isLogin && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -116,15 +162,20 @@ export default function AuthPage() {
 
             {/* Actions */}
             <div className="space-y-4">
-              <Button className="w-full h-14 rounded-2xl bg-[#4F46E5] hover:bg-[#4338CA] text-lg font-bold shadow-lg shadow-blue-200 transition-all">
-                {isLogin ? "로그인" : "회원가입"}
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full h-14 rounded-2xl bg-[#4F46E5] hover:bg-[#4338CA] text-lg font-bold shadow-lg shadow-blue-200 transition-all"
+              >
+                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (isLogin ? "로그인" : "회원가입")}
               </Button>
               
               <div className="flex items-center justify-between px-1">
-                <button className="text-sm font-medium text-blue-600 hover:underline">
+                <button type="button" className="text-sm font-medium text-blue-600 hover:underline">
                   비밀번호를 잊으셨나요?
                 </button>
                 <button 
+                  type="button"
                   onClick={() => setIsLogin(!isLogin)}
                   className="text-sm font-medium text-blue-600 hover:underline"
                 >
@@ -132,11 +183,10 @@ export default function AuthPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="mt-8 text-center">
         <p className="text-slate-400 text-sm font-medium">
           © MinwonTalk. All Rights Reserved. Designed & Developed by DX Team.
