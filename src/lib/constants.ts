@@ -13,22 +13,26 @@ export const FILTER_OPTIONS = {
   },
   compensation: {
     label: '보상 사례',
-    options: ['전체', '정신적피해보상', '영업배상', '분쟁조정']
+    options: ['전체', '정신적피해보상', '영업배상', '재산피해보상', '분쟁조정']
   }
 };
 
-export const BADGE_COLORS = {
-  demandType: {
-    '재산 피해 보상': { bg: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-    '정신적 피해 보상': { bg: 'bg-blue-100 text-blue-700 border-blue-200' },
-    '영업 피해 보상': { bg: 'bg-amber-100 text-amber-700 border-amber-200' }
-  },
-  compensationMethod: {
-    '과태료': { bg: 'bg-rose-50 text-rose-600 border-rose-200' },
-    '시설보수': { bg: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-    '현물보상': { bg: 'bg-sky-50 text-sky-600 border-sky-200' }
-  }
-} as const;
+export const CASE_BADGE_COLORS: Record<string, string> = {
+  '정신적피해보상': 'bg-[#FEF3C7] text-[#B45309] border-[#FDE68A]',
+  '영업배상': 'bg-[#D1FAE5] text-[#065F46] border-[#A7F3D0]',
+  '재산피해보상': 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]',
+  '분쟁조정': 'bg-[#DBEAFE] text-[#1D4ED8] border-[#BFDBFE]'
+};
 
-export type DemandType = keyof typeof BADGE_COLORS.demandType;
-export type CompensationMethod = keyof typeof BADGE_COLORS.compensationMethod;
+export const METHOD_BADGE_COLORS: Record<string, string> = {
+  '과태료': 'bg-rose-50 text-rose-600 border-rose-200',
+  '시설보수': 'bg-indigo-50 text-indigo-600 border-indigo-200',
+  '현물보상': 'bg-sky-50 text-sky-600 border-sky-200',
+  '보상': 'bg-green-50 text-green-600 border-green-200',
+  '미보상': 'bg-slate-50 text-slate-600 border-slate-200'
+};
+
+export const BADGE_COLORS = {
+  demandType: CASE_BADGE_COLORS,
+  compensationMethod: METHOD_BADGE_COLORS
+} as const;

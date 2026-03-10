@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -55,7 +54,6 @@ export default function DashboardPage() {
     return rawGuides.filter(g => {
       const matchRegion = filters.region.length === 0 || filters.region.includes(g.region);
       const matchPhase = filters.phase.length === 0 || filters.phase.includes(g.phase);
-      // Multi-type support: if any of the guide's types match the selected filter types
       const matchType = filters.type.length === 0 || 
         (Array.isArray(g.type) 
           ? g.type.some(t => filters.type.includes(t))
@@ -73,7 +71,12 @@ export default function DashboardPage() {
         (Array.isArray(c.type) 
           ? c.type.some(t => filters.type.includes(t))
           : filters.type.includes(c.type));
-      const matchComp = filters.compensation.length === 0 || filters.compensation.includes(c.requestType);
+      
+      const matchComp = filters.compensation.length === 0 || 
+        (Array.isArray(c.requestType) 
+          ? c.requestType.some(rt => filters.compensation.includes(rt))
+          : filters.compensation.includes(c.requestType));
+          
       return matchRegion && matchPhase && matchType && matchComp;
     });
   }, [rawCases, filters]);

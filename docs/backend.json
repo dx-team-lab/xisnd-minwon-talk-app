@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -51,8 +50,11 @@
           "items": { "type": "string", "enum": ["소음", "분진", "진동", "교통", "언론"] } 
         },
         "complainant": { "type": "string" },
-        "requestType": { "type": "string", "enum": ["정신적피해보상", "영업배상", "분쟁조정"] },
-        "compensationStatus": { "type": "string", "enum": ["보상", "미보상"] },
+        "requestType": { 
+          "type": "array", 
+          "items": { "type": "string", "enum": ["정신적피해보상", "영업배상", "재산피해보상", "분쟁조정"] } 
+        },
+        "compensationStatus": { "type": "string" },
         "compensationAmount": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },

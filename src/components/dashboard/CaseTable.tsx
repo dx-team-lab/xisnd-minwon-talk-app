@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CASE_BADGE_COLORS } from '@/lib/constants';
+import { CASE_BADGE_COLORS, METHOD_BADGE_COLORS } from '@/lib/constants';
 
 interface CaseTableProps {
   data: any[] | null;
@@ -32,7 +31,7 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                 <TableHead className="font-bold text-slate-700">지역/단계/유형</TableHead>
                 <TableHead className="font-bold text-slate-700">민원인</TableHead>
                 <TableHead className="font-bold text-slate-700">요구사항</TableHead>
-                <TableHead className="font-bold text-slate-700">보상유무</TableHead>
+                <TableHead className="font-bold text-slate-700">보상방식</TableHead>
                 <TableHead className="font-bold text-slate-700 text-right">보상금액(원)</TableHead>
               </TableRow>
             </TableHeader>
@@ -54,11 +53,23 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                       {item.complainant}
                     </TableCell>
                     <TableCell className="p-4">
-                      <Badge variant="outline" className={cn("whitespace-nowrap font-bold", CASE_BADGE_COLORS[item.requestType] || "")}>
-                        {item.requestType}
+                      <div className="flex flex-wrap gap-1">
+                        {Array.isArray(item.requestType) ? item.requestType.map((rt: string) => (
+                          <Badge key={rt} variant="outline" className={cn("whitespace-nowrap font-bold", CASE_BADGE_COLORS[rt] || "")}>
+                            {rt}
+                          </Badge>
+                        )) : (
+                          <Badge variant="outline" className={cn("whitespace-nowrap font-bold", CASE_BADGE_COLORS[item.requestType] || "")}>
+                            {item.requestType}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-4">
+                      <Badge variant="outline" className={cn("whitespace-nowrap font-bold", METHOD_BADGE_COLORS[item.compensationStatus] || "")}>
+                        {item.compensationStatus}
                       </Badge>
                     </TableCell>
-                    <TableCell className="p-4 text-slate-600 font-medium">{item.compensationStatus}</TableCell>
                     <TableCell className="p-4 text-right font-semibold text-slate-900 tabular-nums">
                       {item.compensationAmount?.toLocaleString() || '-'}
                     </TableCell>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -15,7 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Trash2, Edit2, PlusCircle, RotateCcw, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
-import { FILTER_OPTIONS, CASE_BADGE_COLORS } from '@/lib/constants';
+import { FILTER_OPTIONS, CASE_BADGE_COLORS, METHOD_BADGE_COLORS } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 export default function CaseExampleSection() {
   const db = useFirestore();
@@ -27,7 +27,7 @@ export default function CaseExampleSection() {
     phase: '',
     type: [] as string[],
     complainant: '',
-    requestType: '',
+    requestType: [] as string[],
     compensationStatus: '',
     compensationAmount: 0
   });
@@ -51,8 +51,18 @@ export default function CaseExampleSection() {
     });
   };
 
+  const toggleRequestType = (val: string) => {
+    setFormData(prev => {
+      const current = prev.requestType || [];
+      const next = current.includes(val)
+        ? current.filter(t => t !== val)
+        : [...current, val];
+      return { ...prev, requestType: next };
+    });
+  };
+
   const handleReset = () => {
-    setFormData({ region: '', phase: '', type: [], complainant: '', requestType: '', compensationStatus: '', compensationAmount: 0 });
+    setFormData({ region: '', phase: '', type: [], complainant: '', requestType: [], compensationStatus: '', compensationAmount: 0 });
     setEditingId(null);
   };
 
@@ -60,12 +70,13 @@ export default function CaseExampleSection() {
     e.preventDefault();
     const { region, phase, type, complainant, requestType, compensationStatus, compensationAmount } = formData;
     
-    if (!region || !phase || !type.length || !complainant || !requestType || !compensationStatus) {
+    if (!region || !phase || !type.length || !complainant || !requestType.length || !compensationStatus) {
       toast({ title: "입력 오류", description: "필수 항목을 모두 입력해주세요.", variant: "destructive" });
       return;
     }
 
-    if (compensationStatus === '보상' && (compensationAmount === undefined || compensationAmount < 0)) {
+    const isCompensated = compensationStatus !== '미보상';
+    if (isCompensated && (compensationAmount === undefined || compensationAmount < 0)) {
       toast({ title: "입력 오류", description: "보상금액을 올바르게 입력해주세요.", variant: "destructive" });
       return;
     }
@@ -97,7 +108,7 @@ export default function CaseExampleSection() {
       phase: item.phase,
       type: Array.isArray(item.type) ? item.type : [item.type],
       complainant: item.complainant,
-      requestType: item.requestType,
+      requestType: Array.isArray(item.requestType) ? item.requestType : [item.requestType],
       compensationStatus: item.compensationStatus,
       compensationAmount: item.compensationAmount || 0
     });
@@ -180,40 +191,45 @@ export default function CaseExampleSection() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-600">요구사항 *</label>
-                    <Select value={formData.requestType} onValueChange={(val) => handleInputChange('requestType', val)}>
-                      <SelectTrigger><SelectValue placeholder="요구사항 선택" /></SelectTrigger>
+                    <label className="text-sm font-bold text-slate-600">보상방식 *</label>
+                    <Select value={formData.compensationStatus} onValueChange={(val) => handleInputChange('compensationStatus', val)}>
+                      <SelectTrigger><SelectValue placeholder="보상방식 선택" /></SelectTrigger>
                       <SelectContent>
-                        {FILTER_OPTIONS.compensation.options.filter(o => o !== '전체').map(o => (
-                          <SelectItem key={o} value={o}>{o}</SelectItem>
-                        ))}
+                        <SelectItem value="과태료">과태료</SelectItem>
+                        <SelectItem value="시설보수">시설보수</SelectItem>
+                        <SelectItem value="현물보상">현물보상</SelectItem>
+                        <SelectItem value="미보상">미보상</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-600">보상유무 *</label>
-                    <Select value={formData.compensationStatus} onValueChange={(val) => handleInputChange('compensationStatus', val)}>
-                      <SelectTrigger><SelectValue placeholder="보상유무 선택" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="보상">보상</SelectItem>
-                        <SelectItem value="미보상">미보상</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600">요구사항 * (복수 선택 가능)</label>
+                  <div className="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-lg border">
+                    {FILTER_OPTIONS.compensation.options.filter(o => o !== '전체').map(o => (
+                      <div key={o} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`req-type-${o}`} 
+                          checked={formData.requestType.includes(o)}
+                          onCheckedChange={() => toggleRequestType(o)}
+                        />
+                        <Label htmlFor={`req-type-${o}`} className="text-sm cursor-pointer">{o}</Label>
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-600">보상금액 (원)</label>
-                    <Input 
-                      type="number"
-                      min="0"
-                      placeholder="0" 
-                      value={formData.compensationAmount}
-                      onChange={(e) => handleInputChange('compensationAmount', Number(e.target.value))}
-                      disabled={formData.compensationStatus === '미보상'}
-                    />
-                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600">보상금액 (원)</label>
+                  <Input 
+                    type="number"
+                    min="0"
+                    placeholder="0" 
+                    value={formData.compensationAmount}
+                    onChange={(e) => handleInputChange('compensationAmount', Number(e.target.value))}
+                    disabled={formData.compensationStatus === '미보상'}
+                  />
                 </div>
               </div>
             </div>
@@ -247,7 +263,7 @@ export default function CaseExampleSection() {
                   <TableHead>유형</TableHead>
                   <TableHead>민원인</TableHead>
                   <TableHead>요구사항</TableHead>
-                  <TableHead>보상유무</TableHead>
+                  <TableHead>보상방식</TableHead>
                   <TableHead className="text-right">보상금액</TableHead>
                   <TableHead className="text-right w-[120px]">관리</TableHead>
                 </TableRow>
@@ -267,11 +283,23 @@ export default function CaseExampleSection() {
                       </TableCell>
                       <TableCell>{c.complainant}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={CASE_BADGE_COLORS[c.requestType] || ""}>
-                          {c.requestType}
+                        <div className="flex flex-wrap gap-1">
+                          {Array.isArray(c.requestType) ? c.requestType.map((t: string) => (
+                            <Badge key={t} variant="outline" className={cn("font-bold", CASE_BADGE_COLORS[t] || "")}>
+                              {t}
+                            </Badge>
+                          )) : (
+                            <Badge variant="outline" className={cn("font-bold", CASE_BADGE_COLORS[c.requestType] || "")}>
+                              {c.requestType}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn("font-bold", METHOD_BADGE_COLORS[c.compensationStatus] || "")}>
+                          {c.compensationStatus}
                         </Badge>
                       </TableCell>
-                      <TableCell>{c.compensationStatus}</TableCell>
                       <TableCell className="text-right tabular-nums">
                         {c.compensationAmount?.toLocaleString()} 원
                       </TableCell>
