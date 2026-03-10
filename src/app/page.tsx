@@ -81,7 +81,7 @@ export default function AuthPage() {
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent pointer-events-none" />
             </div>
             <p className="mt-6 text-slate-500 text-sm leading-relaxed">
-              체계적인 민원 데이터 분석과 AI 대응 어시스턴트를 통해<br />
+              체계적인 민원 데이터 분석을 통해<br />
               현장의 원활한 소통과 효율적인 보상 관리를 지원합니다.
             </p>
           </div>
