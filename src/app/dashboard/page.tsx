@@ -34,8 +34,13 @@ export default function DashboardPage() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
-  // Check if any filter is active
-  const isFilterActive = useMemo(() => {
+  // Check if response-related filters are active (Region, Phase, Type)
+  const isResponseFilterActive = useMemo(() => {
+    return filters.region.length > 0 || filters.phase.length > 0 || filters.type.length > 0;
+  }, [filters.region, filters.phase, filters.type]);
+
+  // Check if any filter is active (for general result count or Cases)
+  const isAnyFilterActive = useMemo(() => {
     return Object.values(filters).some(v => v.length > 0);
   }, [filters]);
 
@@ -53,10 +58,10 @@ export default function DashboardPage() {
   const { data: rawGuides, isLoading: isGuidesLoading } = useCollection(guidesQuery);
   const { data: rawCases, isLoading: isCasesLoading } = useCollection(casesQuery);
 
-  // Filter Logic for Guides
+  // Filter Logic for Guides (Reacts only to Region, Phase, Type)
   const filteredGuides = useMemo(() => {
     if (!rawGuides) return [];
-    if (!isFilterActive) return []; // Don't filter if no active filters
+    if (!isResponseFilterActive) return []; // Stay in Process Flow if these filters aren't used
     
     return rawGuides.filter(g => {
       const matchRegion = filters.region.length === 0 || filters.region.includes(g.region);
@@ -67,9 +72,9 @@ export default function DashboardPage() {
           : filters.type.includes(g.type));
       return matchRegion && matchPhase && matchType;
     });
-  }, [rawGuides, filters, isFilterActive]);
+  }, [rawGuides, filters.region, filters.phase, filters.type, isResponseFilterActive]);
 
-  // Filter Logic for Cases
+  // Filter Logic for Cases (Reacts to all 4 filters)
   const filteredCases = useMemo(() => {
     if (!rawCases) return [];
     return rawCases.filter(c => {
@@ -175,7 +180,7 @@ export default function DashboardPage() {
           <ResponsePlanTable 
             data={filteredGuides} 
             isLoading={isGuidesLoading} 
-            isFilterActive={isFilterActive} 
+            isFilterActive={isResponseFilterActive} 
           />
           <CaseTable 
             data={filteredCases} 
