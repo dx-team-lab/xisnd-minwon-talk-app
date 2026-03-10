@@ -106,9 +106,6 @@ export default function FilterBar() {
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold">검색결과 <span className="text-primary">101건</span></span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            진행 단계와 발생 건수 및 관계가 가장 많은 진행중 프로젝트를 가장 먼저 보여줍니다.
-          </p>
         </div>
       </div>
     </div>
