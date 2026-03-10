@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FILTER_OPTIONS } from '@/lib/constants';
 import { Search, RotateCcw, Download, Grid, Table as TableIcon, MapPin, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 
 export default function FilterBar() {
   const [filters, setFilters] = useState<Record<string, string[]>>({
@@ -53,12 +54,15 @@ export default function FilterBar() {
           <h2 className="font-headline">검색조건</h2>
         </div>
         
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-end gap-4">
           {Object.entries(FILTER_OPTIONS).map(([key, config]) => (
-            <div key={key} className="min-w-[160px]">
+            <div key={key} className="min-w-[160px] space-y-2">
+              <Label className="text-xs font-bold text-slate-500 ml-1">
+                {config.label}
+              </Label>
               <Select onValueChange={(val) => handleSelect(key, val)}>
                 <SelectTrigger className="bg-slate-50 border-slate-200">
-                  <SelectValue placeholder={config.label} />
+                  <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
                   {config.options.map(opt => (
@@ -69,7 +73,7 @@ export default function FilterBar() {
             </div>
           ))}
 
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto pb-0.5">
             <Button size="icon" className="bg-primary hover:bg-primary/90 rounded-lg">
               <Search className="h-4 w-4" />
             </Button>
@@ -103,7 +107,7 @@ export default function FilterBar() {
             <span className="text-lg font-bold">검색결과 <span className="text-primary">101건</span></span>
           </div>
           <p className="text-sm text-muted-foreground">
-            진행 단계와 발생 건수 및 관계가 가장 많은 진행중 프로젝트를 가장 먼저 보여주며...
+            진행 단계와 발생 건수 및 관계가 가장 많은 진행중 프로젝트를 가장 먼저 보여줍니다.
           </p>
         </div>
         
