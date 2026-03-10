@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -36,14 +35,11 @@ export default function UserManagementPage() {
 
   const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
   const adminsQuery = useMemoFirebase(() => collection(db, 'roles_admin'), [db]);
-  const managersQuery = useMemoFirebase(() => collection(db, 'roles_manager'), [db]);
 
   const { data: users, isLoading: isUsersLoading } = useCollection(usersQuery);
   const { data: admins } = useCollection(adminsQuery);
-  const { data: managers } = useCollection(managersQuery);
 
   const isAdmin = (userId: string) => admins?.some(a => a.id === userId);
-  const isManager = (userId: string) => managers?.some(m => m.id === userId);
   
   const isCurrentUserAdmin = user ? isAdmin(user.uid) : false;
 
@@ -70,23 +66,6 @@ export default function UserManagementPage() {
       return;
     }
     const roleRef = doc(db, 'roles_admin', userId);
-    if (current) {
-      deleteDocumentNonBlocking(roleRef);
-    } else {
-      setDocumentNonBlocking(roleRef, { assignedAt: new Date().toISOString() }, { merge: true });
-    }
-  };
-
-  const toggleManager = (userId: string, current: boolean) => {
-    if (!isCurrentUserAdmin && user?.uid !== userId) {
-      toast({
-        title: "권한 부족",
-        description: "일반 권한을 변경하려면 관리자 권한이 필요합니다.",
-        variant: "destructive"
-      });
-      return;
-    }
-    const roleRef = doc(db, 'roles_manager', userId);
     if (current) {
       deleteDocumentNonBlocking(roleRef);
     } else {
@@ -134,7 +113,6 @@ export default function UserManagementPage() {
                   <TableHead className="font-bold text-slate-700">이메일</TableHead>
                   <TableHead className="font-bold text-slate-700 text-center">승인 상태</TableHead>
                   <TableHead className="font-bold text-slate-700 text-center">관리자 권한</TableHead>
-                  <TableHead className="font-bold text-slate-700 text-center">일반 권한</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -171,20 +149,11 @@ export default function UserManagementPage() {
                           />
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center">
-                          <Switch 
-                            checked={isManager(u.id)} 
-                            onCheckedChange={() => toggleManager(u.id, !!isManager(u.id))}
-                            disabled={!isCurrentUserAdmin && u.id !== user?.uid}
-                          />
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-slate-500">
+                    <TableCell colSpan={4} className="text-center py-12 text-slate-500">
                       등록된 사용자가 없습니다.
                     </TableCell>
                   </TableRow>
