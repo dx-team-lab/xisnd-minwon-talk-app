@@ -73,8 +73,8 @@ export default function CaseTable() {
                     <Badge 
                       variant="outline"
                       className={cn(
-                        "shadow-none font-bold border",
-                        BADGE_COLORS.compensationMethod[item.method as CompensationMethod]?.bg || "bg-slate-100 text-slate-700 border-slate-200"
+                        "shadow-none font-bold py-1 px-3 border whitespace-nowrap",
+                        BADGE_COLORS.compensationMethod[item.method as CompensationMethod]?.bg || "bg-slate-50 text-slate-600 border-slate-200"
                       )}
                     >
                       {item.method}

@@ -24,9 +24,9 @@ export const BADGE_COLORS = {
     '영업 피해 보상': { bg: 'bg-amber-100 text-amber-700 border-amber-200' }
   },
   compensationMethod: {
-    '과태료': { bg: 'bg-rose-100 text-rose-700 border-rose-200' },
-    '시설보수': { bg: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-    '현물보상': { bg: 'bg-teal-100 text-teal-700 border-teal-200' }
+    '과태료': { bg: 'bg-rose-50 text-rose-600 border-rose-200' },
+    '시설보수': { bg: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+    '현물보상': { bg: 'bg-sky-50 text-sky-600 border-sky-200' }
   }
 } as const;
 
