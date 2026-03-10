@@ -29,13 +29,13 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
           <Table>
             <TableHeader className="bg-slate-50 border-b">
               <TableRow>
-                <TableHead className="font-bold text-slate-700 text-center w-[70px] border-r">지역</TableHead>
-                <TableHead className="font-bold text-slate-700 text-center w-[70px] border-r">단계</TableHead>
-                <TableHead className="font-bold text-slate-700 text-center w-[100px] border-r">유형</TableHead>
-                <TableHead className="font-bold text-slate-700 w-[180px] border-r">민원인</TableHead>
-                <TableHead className="font-bold text-slate-700 border-r">요구사항</TableHead>
-                <TableHead className="font-bold text-slate-700 border-r">보상방식</TableHead>
-                <TableHead className="font-bold text-slate-700 text-right whitespace-nowrap">보상금액(원)</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 text-center w-[70px] border-r text-sm">지역</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 text-center w-[70px] border-r text-sm">단계</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">유형</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 w-[180px] border-r text-sm">민원인</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 border-r text-sm">요구사항</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 border-r text-sm">보상방식</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 text-right whitespace-nowrap text-sm">보상금액(원)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -74,18 +74,18 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                     <TableCell className="p-4 border-r">
                       <div className="flex flex-col gap-1.5">
                         {Array.isArray(item.requestType) ? item.requestType.map((rt: string) => (
-                          <Badge key={rt} variant="outline" className={cn("whitespace-nowrap font-bold w-fit", CASE_BADGE_COLORS[rt] || "")}>
+                          <Badge key={rt} variant="outline" className={cn("whitespace-nowrap font-bold w-fit text-xs", CASE_BADGE_COLORS[rt] || "")}>
                             {rt}
                           </Badge>
                         )) : (
-                          <Badge variant="outline" className={cn("whitespace-nowrap font-bold w-fit", CASE_BADGE_COLORS[item.requestType] || "")}>
+                          <Badge variant="outline" className={cn("whitespace-nowrap font-bold w-fit text-xs", CASE_BADGE_COLORS[item.requestType] || "")}>
                             {item.requestType}
                           </Badge>
                         )}
                       </div>
                     </TableCell>
                     <TableCell className="p-4 border-r text-center">
-                      <Badge variant="outline" className={cn("whitespace-nowrap font-bold", METHOD_BADGE_COLORS[item.compensationStatus] || "")}>
+                      <Badge variant="outline" className={cn("whitespace-nowrap font-bold text-xs", METHOD_BADGE_COLORS[item.compensationStatus] || "")}>
                         {item.compensationStatus}
                       </Badge>
                     </TableCell>
