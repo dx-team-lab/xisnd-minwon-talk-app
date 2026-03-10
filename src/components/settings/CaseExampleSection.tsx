@@ -9,17 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Trash2, Edit2, PlusCircle, RotateCcw, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
-import { FILTER_OPTIONS } from '@/lib/constants';
-
-const CASE_BADGE_COLORS: Record<string, string> = {
-  '정신적피해보상': 'bg-[#FEF3C7] text-[#B45309] border-none',
-  '영업배상': 'bg-[#D1FAE5] text-[#065F46] border-none',
-  '분쟁조정': 'bg-[#DBEAFE] text-[#1D4ED8] border-none'
-};
+import { FILTER_OPTIONS, CASE_BADGE_COLORS } from '@/lib/constants';
 
 export default function CaseExampleSection() {
   const db = useFirestore();
@@ -29,7 +25,7 @@ export default function CaseExampleSection() {
   const [formData, setFormData] = useState({
     region: '',
     phase: '',
-    type: '',
+    type: [] as string[],
     complainant: '',
     requestType: '',
     compensationStatus: '',
@@ -45,8 +41,18 @@ export default function CaseExampleSection() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const toggleType = (val: string) => {
+    setFormData(prev => {
+      const current = prev.type || [];
+      const next = current.includes(val)
+        ? current.filter(t => t !== val)
+        : [...current, val];
+      return { ...prev, type: next };
+    });
+  };
+
   const handleReset = () => {
-    setFormData({ region: '', phase: '', type: '', complainant: '', requestType: '', compensationStatus: '', compensationAmount: 0 });
+    setFormData({ region: '', phase: '', type: [], complainant: '', requestType: '', compensationStatus: '', compensationAmount: 0 });
     setEditingId(null);
   };
 
@@ -54,7 +60,7 @@ export default function CaseExampleSection() {
     e.preventDefault();
     const { region, phase, type, complainant, requestType, compensationStatus, compensationAmount } = formData;
     
-    if (!region || !phase || !type || !complainant || !requestType || !compensationStatus) {
+    if (!region || !phase || !type.length || !complainant || !requestType || !compensationStatus) {
       toast({ title: "입력 오류", description: "필수 항목을 모두 입력해주세요.", variant: "destructive" });
       return;
     }
@@ -89,7 +95,7 @@ export default function CaseExampleSection() {
     setFormData({
       region: item.region,
       phase: item.phase,
-      type: item.type,
+      type: Array.isArray(item.type) ? item.type : [item.type],
       complainant: item.complainant,
       requestType: item.requestType,
       compensationStatus: item.compensationStatus,
@@ -119,84 +125,97 @@ export default function CaseExampleSection() {
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">지역 *</label>
-                <Select value={formData.region} onValueChange={(val) => handleInputChange('region', val)}>
-                  <SelectTrigger><SelectValue placeholder="지역 선택" /></SelectTrigger>
-                  <SelectContent>
-                    {FILTER_OPTIONS.region.options.filter(o => o !== '전체').map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">단계 *</label>
-                <Select value={formData.phase} onValueChange={(val) => handleInputChange('phase', val)}>
-                  <SelectTrigger><SelectValue placeholder="단계 선택" /></SelectTrigger>
-                  <SelectContent>
-                    {FILTER_OPTIONS.phase.options.filter(o => o !== '전체').map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">유형 *</label>
-                <Select value={formData.type} onValueChange={(val) => handleInputChange('type', val)}>
-                  <SelectTrigger><SelectValue placeholder="유형 선택" /></SelectTrigger>
-                  <SelectContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-600">지역 *</label>
+                    <Select value={formData.region} onValueChange={(val) => handleInputChange('region', val)}>
+                      <SelectTrigger><SelectValue placeholder="지역 선택" /></SelectTrigger>
+                      <SelectContent>
+                        {FILTER_OPTIONS.region.options.filter(o => o !== '전체').map(o => (
+                          <SelectItem key={o} value={o}>{o}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-600">단계 *</label>
+                    <Select value={formData.phase} onValueChange={(val) => handleInputChange('phase', val)}>
+                      <SelectTrigger><SelectValue placeholder="단계 선택" /></SelectTrigger>
+                      <SelectContent>
+                        {FILTER_OPTIONS.phase.options.filter(o => o !== '전체').map(o => (
+                          <SelectItem key={o} value={o}>{o}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600">유형 * (복수 선택 가능)</label>
+                  <div className="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-lg border">
                     {FILTER_OPTIONS.type.options.filter(o => o !== '전체').map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                      <div key={o} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`type-case-${o}`} 
+                          checked={formData.type.includes(o)}
+                          onCheckedChange={() => toggleType(o)}
+                        />
+                        <Label htmlFor={`type-case-${o}`} className="text-sm cursor-pointer">{o}</Label>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">민원인 *</label>
-                <Input 
-                  placeholder="민원인 정보 입력" 
-                  value={formData.complainant}
-                  onChange={(e) => handleInputChange('complainant', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">요구사항 *</label>
-                <Select value={formData.requestType} onValueChange={(val) => handleInputChange('requestType', val)}>
-                  <SelectTrigger><SelectValue placeholder="요구사항 선택" /></SelectTrigger>
-                  <SelectContent>
-                    {FILTER_OPTIONS.compensation.options.filter(o => o !== '전체').map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">보상유무 *</label>
-                <Select value={formData.compensationStatus} onValueChange={(val) => handleInputChange('compensationStatus', val)}>
-                  <SelectTrigger><SelectValue placeholder="보상유무 선택" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="보상">보상</SelectItem>
-                    <SelectItem value="미보상">미보상</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-600">민원인 *</label>
+                    <Input 
+                      placeholder="민원인 정보 입력" 
+                      value={formData.complainant}
+                      onChange={(e) => handleInputChange('complainant', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-600">요구사항 *</label>
+                    <Select value={formData.requestType} onValueChange={(val) => handleInputChange('requestType', val)}>
+                      <SelectTrigger><SelectValue placeholder="요구사항 선택" /></SelectTrigger>
+                      <SelectContent>
+                        {FILTER_OPTIONS.compensation.options.filter(o => o !== '전체').map(o => (
+                          <SelectItem key={o} value={o}>{o}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <div className="space-y-2 max-w-md">
-              <label className="text-sm font-bold text-slate-600">보상금액 (원) {formData.compensationStatus === '보상' ? '*' : '(미보상 시 0)'}</label>
-              <Input 
-                type="number"
-                min="0"
-                placeholder="0" 
-                value={formData.compensationAmount}
-                onChange={(e) => handleInputChange('compensationAmount', Number(e.target.value))}
-                disabled={formData.compensationStatus === '미보상'}
-              />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-600">보상유무 *</label>
+                    <Select value={formData.compensationStatus} onValueChange={(val) => handleInputChange('compensationStatus', val)}>
+                      <SelectTrigger><SelectValue placeholder="보상유무 선택" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="보상">보상</SelectItem>
+                        <SelectItem value="미보상">미보상</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-600">보상금액 (원)</label>
+                    <Input 
+                      type="number"
+                      min="0"
+                      placeholder="0" 
+                      value={formData.compensationAmount}
+                      onChange={(e) => handleInputChange('compensationAmount', Number(e.target.value))}
+                      disabled={formData.compensationStatus === '미보상'}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t">
@@ -239,7 +258,13 @@ export default function CaseExampleSection() {
                     <TableRow key={c.id} className="hover:bg-slate-50">
                       <TableCell>{c.region}</TableCell>
                       <TableCell>{c.phase}</TableCell>
-                      <TableCell>{c.type}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {Array.isArray(c.type) ? c.type.map((t: string) => (
+                            <Badge key={t} variant="secondary" className="text-[10px] px-1">{t}</Badge>
+                          )) : <Badge variant="secondary" className="text-[10px] px-1">{c.type}</Badge>}
+                        </div>
+                      </TableCell>
                       <TableCell>{c.complainant}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={CASE_BADGE_COLORS[c.requestType] || ""}>

@@ -4,6 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface ResponsePlanTableProps {
   data: any[] | null;
@@ -28,7 +29,7 @@ export default function ResponsePlanTable({ data, isLoading }: ResponsePlanTable
               <TableRow>
                 <TableHead className="font-bold border-r text-slate-700 text-center w-[80px]">지역</TableHead>
                 <TableHead className="font-bold border-r text-slate-700 text-center w-[80px]">단계</TableHead>
-                <TableHead className="font-bold border-r text-slate-700 text-center w-[80px]">유형</TableHead>
+                <TableHead className="font-bold border-r text-slate-700 text-center w-[120px]">유형</TableHead>
                 <TableHead className="font-bold border-r text-slate-700 text-center">원인</TableHead>
                 <TableHead className="font-bold text-slate-700 text-center">조치사항</TableHead>
               </TableRow>
@@ -43,8 +44,12 @@ export default function ResponsePlanTable({ data, isLoading }: ResponsePlanTable
                     <TableCell className="border-r text-center align-top p-4 text-sm font-bold text-primary whitespace-nowrap">
                       {row.phase}
                     </TableCell>
-                    <TableCell className="border-r text-center align-top p-4 text-xs font-bold text-slate-500 whitespace-nowrap">
-                      {row.type}
+                    <TableCell className="border-r text-center align-top p-4">
+                      <div className="flex flex-wrap justify-center gap-1">
+                        {Array.isArray(row.type) ? row.type.map((t: string) => (
+                          <Badge key={t} variant="secondary" className="text-[10px] px-1 font-bold whitespace-nowrap">{t}</Badge>
+                        )) : <Badge variant="secondary" className="text-[10px] px-1 font-bold whitespace-nowrap">{row.type}</Badge>}
+                      </div>
                     </TableCell>
                     <TableCell className="border-r align-top p-4 text-sm leading-relaxed">
                       {row.cause}

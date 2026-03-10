@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, Trash2, Edit2, PlusCircle, RotateCcw, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
@@ -23,7 +26,7 @@ export default function ResponseGuideSection() {
   const [formData, setFormData] = useState({
     region: '',
     phase: '',
-    type: '',
+    type: [] as string[],
     cause: '',
     action: ''
   });
@@ -33,12 +36,22 @@ export default function ResponseGuideSection() {
   const guidesQuery = useMemoFirebase(() => query(collection(db, 'responseGuides'), orderBy('createdAt', 'desc')), [db]);
   const { data: guides, isLoading } = useCollection(guidesQuery);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const toggleType = (val: string) => {
+    setFormData(prev => {
+      const current = prev.type || [];
+      const next = current.includes(val)
+        ? current.filter(t => t !== val)
+        : [...current, val];
+      return { ...prev, type: next };
+    });
+  };
+
   const handleReset = () => {
-    setFormData({ region: '', phase: '', type: '', cause: '', action: '' });
+    setFormData({ region: '', phase: '', type: [], cause: '', action: '' });
     setEditingId(null);
   };
 
@@ -46,7 +59,7 @@ export default function ResponseGuideSection() {
     e.preventDefault();
     const { region, phase, type, cause, action } = formData;
     
-    if (!region || !phase || !type || !cause || !action) {
+    if (!region || !phase || !type.length || !cause || !action) {
       toast({ title: "입력 오류", description: "필수 항목을 모두 입력해주세요.", variant: "destructive" });
       return;
     }
@@ -75,7 +88,7 @@ export default function ResponseGuideSection() {
     setFormData({
       region: guide.region,
       phase: guide.phase,
-      type: guide.type,
+      type: Array.isArray(guide.type) ? guide.type : [guide.type],
       cause: guide.cause,
       action: guide.action
     });
@@ -103,59 +116,72 @@ export default function ResponseGuideSection() {
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">지역 *</label>
-                <Select value={formData.region} onValueChange={(val) => handleInputChange('region', val)}>
-                  <SelectTrigger><SelectValue placeholder="지역 선택" /></SelectTrigger>
-                  <SelectContent>
-                    {FILTER_OPTIONS.region.options.filter(o => o !== '전체').map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">단계 *</label>
-                <Select value={formData.phase} onValueChange={(val) => handleInputChange('phase', val)}>
-                  <SelectTrigger><SelectValue placeholder="단계 선택" /></SelectTrigger>
-                  <SelectContent>
-                    {FILTER_OPTIONS.phase.options.filter(o => o !== '전체').map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">유형 *</label>
-                <Select value={formData.type} onValueChange={(val) => handleInputChange('type', val)}>
-                  <SelectTrigger><SelectValue placeholder="유형 선택" /></SelectTrigger>
-                  <SelectContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-600">지역 *</label>
+                    <Select value={formData.region} onValueChange={(val) => handleInputChange('region', val)}>
+                      <SelectTrigger><SelectValue placeholder="지역 선택" /></SelectTrigger>
+                      <SelectContent>
+                        {FILTER_OPTIONS.region.options.filter(o => o !== '전체').map(o => (
+                          <SelectItem key={o} value={o}>{o}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-600">단계 *</label>
+                    <Select value={formData.phase} onValueChange={(val) => handleInputChange('phase', val)}>
+                      <SelectTrigger><SelectValue placeholder="단계 선택" /></SelectTrigger>
+                      <SelectContent>
+                        {FILTER_OPTIONS.phase.options.filter(o => o !== '전체').map(o => (
+                          <SelectItem key={o} value={o}>{o}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600">유형 * (복수 선택 가능)</label>
+                  <div className="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-lg border">
                     {FILTER_OPTIONS.type.options.filter(o => o !== '전체').map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                      <div key={o} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`type-guide-${o}`} 
+                          checked={formData.type.includes(o)}
+                          onCheckedChange={() => toggleType(o)}
+                        />
+                        <Label htmlFor={`type-guide-${o}`} className="text-sm cursor-pointer">{o}</Label>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600">원인 *</label>
+                  <Textarea 
+                    placeholder="민원 발생 원인을 상세히 입력하세요" 
+                    value={formData.cause}
+                    onChange={(e) => handleInputChange('cause', e.target.value)}
+                    className="min-h-[80px]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600">조치사항 *</label>
+                  <Textarea 
+                    placeholder="대응 조치사항을 입력하세요" 
+                    value={formData.action}
+                    onChange={(e) => handleInputChange('action', e.target.value)}
+                    className="min-h-[80px]"
+                  />
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-600">원인 *</label>
-              <Textarea 
-                placeholder="민원 발생 원인을 상세히 입력하세요" 
-                value={formData.cause}
-                onChange={(e) => handleInputChange('cause', e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-600">조치사항 *</label>
-              <Textarea 
-                placeholder="대응 조치사항을 입력하세요" 
-                value={formData.action}
-                onChange={(e) => handleInputChange('action', e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
+
             <div className="flex justify-end gap-3 pt-4 border-t">
               <Button type="button" variant="outline" onClick={handleReset} className="gap-2">
                 <RotateCcw className="h-4 w-4" /> 초기화
@@ -182,7 +208,7 @@ export default function ResponseGuideSection() {
                 <TableRow>
                   <TableHead className="w-[100px]">지역</TableHead>
                   <TableHead className="w-[100px]">단계</TableHead>
-                  <TableHead className="w-[100px]">유형</TableHead>
+                  <TableHead className="w-[150px]">유형</TableHead>
                   <TableHead>원인</TableHead>
                   <TableHead>조치사항</TableHead>
                   <TableHead className="text-right w-[120px]">관리</TableHead>
@@ -194,7 +220,13 @@ export default function ResponseGuideSection() {
                     <TableRow key={g.id} className="hover:bg-slate-50">
                       <TableCell className="font-medium">{g.region}</TableCell>
                       <TableCell>{g.phase}</TableCell>
-                      <TableCell>{g.type}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {Array.isArray(g.type) ? g.type.map((t: string) => (
+                            <Badge key={t} variant="secondary" className="text-[10px] px-1">{t}</Badge>
+                          )) : <Badge variant="secondary" className="text-[10px] px-1">{g.type}</Badge>}
+                        </div>
+                      </TableCell>
                       <TableCell className="max-w-xs truncate">{g.cause}</TableCell>
                       <TableCell className="max-w-xs truncate">{g.action}</TableCell>
                       <TableCell className="text-right">

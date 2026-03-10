@@ -55,7 +55,11 @@ export default function DashboardPage() {
     return rawGuides.filter(g => {
       const matchRegion = filters.region.length === 0 || filters.region.includes(g.region);
       const matchPhase = filters.phase.length === 0 || filters.phase.includes(g.phase);
-      const matchType = filters.type.length === 0 || filters.type.includes(g.type);
+      // Multi-type support: if any of the guide's types match the selected filter types
+      const matchType = filters.type.length === 0 || 
+        (Array.isArray(g.type) 
+          ? g.type.some(t => filters.type.includes(t))
+          : filters.type.includes(g.type));
       return matchRegion && matchPhase && matchType;
     });
   }, [rawGuides, filters]);
@@ -65,7 +69,10 @@ export default function DashboardPage() {
     return rawCases.filter(c => {
       const matchRegion = filters.region.length === 0 || filters.region.includes(c.region);
       const matchPhase = filters.phase.length === 0 || filters.phase.includes(c.phase);
-      const matchType = filters.type.length === 0 || filters.type.includes(c.type);
+      const matchType = filters.type.length === 0 || 
+        (Array.isArray(c.type) 
+          ? c.type.some(t => filters.type.includes(t))
+          : filters.type.includes(c.type));
       const matchComp = filters.compensation.length === 0 || filters.compensation.includes(c.requestType);
       return matchRegion && matchPhase && matchType && matchComp;
     });
