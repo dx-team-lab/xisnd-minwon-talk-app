@@ -66,7 +66,7 @@ export default function UserManagementPage() {
     if (!isCurrentUserAdmin && user?.uid !== userId) {
       toast({
         title: "권한 부족",
-        description: "다른 사용자의 매니저 권한을 변경하려면 관리자 권한이 필요합니다.",
+        description: "다른 사용자의 일반 권한을 변경하려면 관리자 권한이 필요합니다.",
         variant: "destructive"
       });
       return;
@@ -119,7 +119,7 @@ export default function UserManagementPage() {
                   <TableHead className="font-bold text-slate-700">이메일</TableHead>
                   <TableHead className="font-bold text-slate-700">현재 역할</TableHead>
                   <TableHead className="font-bold text-slate-700 text-center">관리자 권한</TableHead>
-                  <TableHead className="font-bold text-slate-700 text-center">매니저 권한</TableHead>
+                  <TableHead className="font-bold text-slate-700 text-center">일반 권한</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -138,8 +138,8 @@ export default function UserManagementPage() {
                       <TableCell>
                         <div className="flex gap-2">
                           {isAdmin(u.id) && <Badge className="bg-red-50 text-red-700 border-red-100">관리자</Badge>}
-                          {isManager(u.id) && <Badge className="bg-blue-50 text-blue-700 border-blue-100">매니저</Badge>}
-                          {!isAdmin(u.id) && !isManager(u.id) && <Badge variant="outline">일반</Badge>}
+                          {isManager(u.id) && <Badge className="bg-blue-50 text-blue-700 border-blue-100">일반</Badge>}
+                          {!isAdmin(u.id) && !isManager(u.id) && <Badge variant="outline">조회</Badge>}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
