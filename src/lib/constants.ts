@@ -32,7 +32,9 @@ export const METHOD_BADGE_COLORS: Record<string, string> = {
   '시설보수': 'bg-indigo-50 text-indigo-600 border-indigo-200',
   '현물보상': 'bg-sky-50 text-sky-600 border-sky-200',
   '보상': 'bg-green-50 text-green-600 border-green-200',
-  '미보상': 'bg-slate-50 text-slate-600 border-slate-200'
+  '미보상': 'bg-slate-50 text-slate-600 border-slate-200',
+  '안전진단': 'bg-amber-50 text-amber-600 border-amber-200',
+  '예방활동': 'bg-emerald-50 text-emerald-600 border-emerald-200'
 };
 
 export const BADGE_COLORS = {

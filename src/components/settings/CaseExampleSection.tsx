@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -198,6 +199,8 @@ export default function CaseExampleSection() {
                         <SelectItem value="과태료">과태료</SelectItem>
                         <SelectItem value="시설보수">시설보수</SelectItem>
                         <SelectItem value="현물보상">현물보상</SelectItem>
+                        <SelectItem value="안전진단">안전진단</SelectItem>
+                        <SelectItem value="예방활동">예방활동</SelectItem>
                         <SelectItem value="미보상">미보상</SelectItem>
                       </SelectContent>
                     </Select>
