@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,8 @@ import {
   useUser, 
   useFirestore,
   setDocumentNonBlocking,
-  deleteDocumentNonBlocking
+  deleteDocumentNonBlocking,
+  updateDocumentNonBlocking
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import Header from '@/components/common/Header';
@@ -17,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Shield, User, AlertCircle } from 'lucide-react';
+import { Loader2, Shield, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function UserManagementPage() {
@@ -45,11 +47,24 @@ export default function UserManagementPage() {
   
   const isCurrentUserAdmin = user ? isAdmin(user.uid) : false;
 
+  const toggleApproval = (userId: string, currentStatus: boolean) => {
+    if (!isCurrentUserAdmin && user?.uid !== userId) {
+      toast({
+        title: "권한 부족",
+        description: "승인 상태를 변경하려면 관리자 권한이 필요합니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    const userRef = doc(db, 'users', userId);
+    updateDocumentNonBlocking(userRef, { approved: !currentStatus });
+  };
+
   const toggleAdmin = (userId: string, current: boolean) => {
     if (!isCurrentUserAdmin && user?.uid !== userId) {
       toast({
         title: "권한 부족",
-        description: "다른 사용자의 관리자 권한을 변경하려면 관리자 권한이 필요합니다.",
+        description: "관리자 권한을 변경하려면 관리자 권한이 필요합니다.",
         variant: "destructive"
       });
       return;
@@ -66,7 +81,7 @@ export default function UserManagementPage() {
     if (!isCurrentUserAdmin && user?.uid !== userId) {
       toast({
         title: "권한 부족",
-        description: "다른 사용자의 일반 권한을 변경하려면 관리자 권한이 필요합니다.",
+        description: "일반 권한을 변경하려면 관리자 권한이 필요합니다.",
         variant: "destructive"
       });
       return;
@@ -94,7 +109,7 @@ export default function UserManagementPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-headline font-bold text-slate-900">사용자 관리</h1>
-            <p className="text-slate-500 text-sm">시스템의 사용자 권한을 설정하고 관리합니다.</p>
+            <p className="text-slate-500 text-sm">시스템의 사용자 승인 및 권한을 설정합니다.</p>
           </div>
           {!isCurrentUserAdmin && (
             <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg border border-amber-100 text-sm font-medium">
@@ -108,7 +123,7 @@ export default function UserManagementPage() {
           <CardHeader className="bg-white border-b py-4">
             <CardTitle className="text-xl font-headline flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
-              사용자 권한 설정
+              사용자 승인 및 권한 설정
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -117,7 +132,7 @@ export default function UserManagementPage() {
                 <TableRow>
                   <TableHead className="font-bold text-slate-700">사용자 정보</TableHead>
                   <TableHead className="font-bold text-slate-700">이메일</TableHead>
-                  <TableHead className="font-bold text-slate-700">현재 역할</TableHead>
+                  <TableHead className="font-bold text-slate-700 text-center">승인 상태</TableHead>
                   <TableHead className="font-bold text-slate-700 text-center">관리자 권한</TableHead>
                   <TableHead className="font-bold text-slate-700 text-center">일반 권한</TableHead>
                 </TableRow>
@@ -135,11 +150,16 @@ export default function UserManagementPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-slate-600">{u.email}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {isAdmin(u.id) && <Badge className="bg-red-50 text-red-700 border-red-100">관리자</Badge>}
-                          {isManager(u.id) && <Badge className="bg-blue-50 text-blue-700 border-blue-100">일반</Badge>}
-                          {!isAdmin(u.id) && !isManager(u.id) && <Badge variant="outline">조회</Badge>}
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <Switch 
+                            checked={!!u.approved} 
+                            onCheckedChange={() => toggleApproval(u.id, !!u.approved)}
+                            disabled={!isCurrentUserAdmin && u.id !== user?.uid}
+                          />
+                          <span className="text-[10px] font-bold">
+                            {u.approved ? <span className="text-green-600">승인됨</span> : <span className="text-amber-600">대기중</span>}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">

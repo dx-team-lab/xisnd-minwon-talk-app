@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useUser, useFirestore, initiateEmailSignIn, initiateEmailSignUp } from '@/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 export default function AuthPage() {
@@ -38,23 +38,26 @@ export default function AuthPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (authUser) {
-        // Create or update profile document whenever auth state changes to "signed in"
-        // This ensures existing accounts like eom1986@xisnd.com get a profile doc
         const userRef = doc(db, 'users', authUser.uid);
-        await setDoc(userRef, {
-          id: authUser.uid,
-          email: authUser.email,
-          displayName: authUser.displayName || authUser.email?.split('@')[0],
-          // We use merge: true to avoid overwriting existing data (like custom roles)
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
+        const userDoc = await getDoc(userRef);
         
-        // For new users, we can set a default role if needed, but the schema has 'role' as required
-        // In a real app, you might want to check if the doc exists first to set 'createdAt'
-        await setDoc(userRef, {
-          createdAt: serverTimestamp(),
-          role: 'viewer'
-        }, { merge: true });
+        if (!userDoc.exists()) {
+          // New user: Set default role to 'manager' (일반 권한) and approved to false
+          await setDoc(userRef, {
+            id: authUser.uid,
+            email: authUser.email,
+            displayName: authUser.displayName || authUser.email?.split('@')[0],
+            role: 'manager',
+            approved: false,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          // Existing user: just update last login/updatedAt
+          await setDoc(userRef, {
+            updatedAt: serverTimestamp(),
+          }, { merge: true });
+        }
       }
     });
     return () => unsubscribe();
