@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
-import { Info, List, PlusCircle } from 'lucide-react';
 
 export default function HeroBanner() {
   const images = PlaceHolderImages.filter(img => img.id.startsWith('project-'));
@@ -22,20 +21,6 @@ export default function HeroBanner() {
               진행중 · 유보 · 완료 상태를 한눈에 확인하고,<br />
               체계적인 대응 방안과 보상 사례를 공유하여 효율적인 민원 관리를 지원합니다.
             </p>
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary gap-2">
-                <Info className="h-4 w-4" />
-                진행 단계 설명
-              </Button>
-              <Button className="bg-[#22C55E] hover:bg-[#16A34A] text-white gap-2">
-                <List className="h-4 w-4" />
-                내 프로젝트 목록
-              </Button>
-              <Button variant="secondary" className="bg-black text-white hover:bg-zinc-800 gap-2">
-                <PlusCircle className="h-4 w-4" />
-                새 프로젝트 만들기
-              </Button>
-            </div>
           </div>
 
           <div className="relative mx-auto w-full max-w-xl lg:ml-auto">
