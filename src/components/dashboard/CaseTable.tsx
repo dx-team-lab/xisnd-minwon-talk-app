@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { BADGE_COLORS, type DemandType, type CompensationMethod } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 export default function CaseTable() {
   const cases = [
@@ -47,7 +48,14 @@ export default function CaseTable() {
               <TableRow key={idx} className="hover:bg-slate-50 transition-colors">
                 <TableCell>
                   {item.demand !== '-' && (
-                    <Badge className={`border-none shadow-none py-1 px-3 whitespace-nowrap ${BADGE_COLORS.demandType[item.demand as DemandType].bg} ${BADGE_COLORS.demandType[item.demand as DemandType].text}`}>
+                    <Badge 
+                      variant="outline"
+                      className={cn(
+                        "border-none shadow-none py-1 px-3 whitespace-nowrap font-bold",
+                        BADGE_COLORS.demandType[item.demand as DemandType]?.bg || "bg-slate-100",
+                        BADGE_COLORS.demandType[item.demand as DemandType]?.text || "text-slate-700"
+                      )}
+                    >
                       {item.demand}
                     </Badge>
                   )}
@@ -61,7 +69,14 @@ export default function CaseTable() {
                 </TableCell>
                 <TableCell>
                   {item.method !== '-' && (
-                    <Badge className={`border-none shadow-none ${BADGE_COLORS.compensationMethod[item.method as CompensationMethod].bg} ${BADGE_COLORS.compensationMethod[item.method as CompensationMethod].text}`}>
+                    <Badge 
+                      variant="outline"
+                      className={cn(
+                        "border-none shadow-none font-bold",
+                        BADGE_COLORS.compensationMethod[item.method as CompensationMethod]?.bg || "bg-slate-100",
+                        BADGE_COLORS.compensationMethod[item.method as CompensationMethod]?.text || "text-slate-700"
+                      )}
+                    >
                       {item.method}
                     </Badge>
                   )}

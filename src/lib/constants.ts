@@ -20,14 +20,14 @@ export const FILTER_OPTIONS = {
 
 export const BADGE_COLORS = {
   demandType: {
-    '재산 피해 보상': { bg: 'bg-[#D1FAE5]', text: 'text-[#065F46]' }, // 초록색
-    '정신적 피해 보상': { bg: 'bg-[#DBEAFE]', text: 'text-[#1D4ED8]' }, // 파란색
-    '영업 피해 보상': { bg: 'bg-[#FEF3C7]', text: 'text-[#B45309]' }  // 노란색/갈색
+    '재산 피해 보상': { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+    '정신적 피해 보상': { bg: 'bg-blue-100', text: 'text-blue-700' },
+    '영업 피해 보상': { bg: 'bg-amber-100', text: 'text-amber-700' }
   },
   compensationMethod: {
-    '근태로': { bg: 'bg-[#FEE2E2]', text: 'text-[#DC2626]' },
-    '시설보수': { bg: 'bg-[#E0E7FF]', text: 'text-[#4338CA]' },
-    '현물보상': { bg: 'bg-[#CCFBF1]', text: 'text-[#0F766E]' }
+    '근태로': { bg: 'bg-rose-100', text: 'text-rose-700' },
+    '시설보수': { bg: 'bg-indigo-100', text: 'text-indigo-700' },
+    '현물보상': { bg: 'bg-teal-100', text: 'text-teal-700' }
   }
 } as const;
 
