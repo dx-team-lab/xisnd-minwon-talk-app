@@ -34,7 +34,7 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                 <TableHead className="font-bold text-slate-700 w-[180px] border-r">민원인</TableHead>
                 <TableHead className="font-bold text-slate-700 border-r">요구사항</TableHead>
                 <TableHead className="font-bold text-slate-700 border-r">보상방식</TableHead>
-                <TableHead className="font-bold text-slate-700 text-right">보상금액(원)</TableHead>
+                <TableHead className="font-bold text-slate-700 text-right whitespace-nowrap">보상금액(원)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
