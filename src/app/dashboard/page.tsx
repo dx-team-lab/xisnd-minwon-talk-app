@@ -11,7 +11,7 @@ import FilterBar from '@/components/dashboard/FilterBar';
 import ResponsePlanTable from '@/components/dashboard/ResponsePlanTable';
 import CaseTable from '@/components/dashboard/CaseTable';
 import AIAssistantDialog from '@/components/dashboard/AIAssistantDialog';
-import { Loader2, Lock, ShieldAlert } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -71,7 +71,7 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
-        <p className="mt-8 text-slate-400 text-xs">관리자 문의: admin@minwontalk.com</p>
+        <p className="mt-8 text-slate-400 text-xs">관리자 문의: jin38@xisnd.com</p>
       </div>
     );
   }
