@@ -27,7 +27,7 @@
         "phase": { "type": "string", "enum": ["착수전", "철거", "토공", "골조", "마감", "준공이후"] },
         "type": { 
           "type": "array", 
-          "items": { "type": "string", "enum": ["소음", "비산먼지", "진동", "교통", "언론", "파손", "폐기물"] } 
+          "items": { "type": "string", "enum": ["소음", "비산먼지", "진동", "교통", "언론", "파손", "폐기물", "야간의혹", "영업피해", "출입통제"] } 
         },
         "cause": { "type": "string" },
         "action": { "type": "string" },
@@ -48,12 +48,12 @@
         "phase": { "type": "string", "enum": ["착수전", "철거", "토공", "골조", "마감", "준공이후"] },
         "type": { 
           "type": "array", 
-          "items": { "type": "string", "enum": ["소음", "비산먼지", "진동", "교통", "언론", "파손", "폐기물"] } 
+          "items": { "type": "string", "enum": ["소음", "비산먼지", "진동", "교통", "언론", "파손", "폐기물", "야간의혹", "영업피해", "출입통제"] } 
         },
         "complainant": { "type": "string" },
         "requestType": { 
           "type": "array", 
-          "items": { "type": "string", "enum": ["정신적피해보상", "영업배상", "재산피해보상", "분쟁조정", "대인피해보상", "행정처분"] } 
+          "items": { "type": "string", "enum": ["정신적피해보상", "영업피해보상", "재산피해보상", "분쟁조정", "대인피해보상", "행정처분"] } 
         },
         "compensationStatus": { "type": "string" },
         "compensationAmount": { "type": "number" },

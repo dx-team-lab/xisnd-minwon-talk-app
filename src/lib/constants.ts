@@ -14,13 +14,13 @@ export const FILTER_OPTIONS: Record<string, { label: string; options: string[] }
   },
   compensation: {
     label: '보상 사례',
-    options: ['전체', '정신적피해보상', '영업배상', '재산피해보상', '분쟁조정', '대인피해보상', '행정처분']
+    options: ['전체', '정신적피해보상', '영업피해보상', '재산피해보상', '분쟁조정', '대인피해보상', '행정처분']
   }
 };
 
 export const CASE_BADGE_COLORS: Record<string, string> = {
   '정신적피해보상': 'bg-blue-100 text-blue-700 border-blue-200',
-  '영업배상': 'bg-amber-100 text-amber-700 border-amber-200',
+  '영업피해보상': 'bg-amber-100 text-amber-700 border-amber-200',
   '재산피해보상': 'bg-green-100 text-green-700 border-green-200',
   '분쟁조정': 'bg-purple-100 text-purple-700 border-purple-200',
   '대인피해보상': 'bg-rose-100 text-rose-700 border-rose-200',
