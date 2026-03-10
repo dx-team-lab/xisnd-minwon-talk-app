@@ -81,8 +81,10 @@ export default function DashboardPage() {
       <HeroBanner />
       <main className="container mx-auto px-4 py-8 space-y-12">
         <FilterBar />
-        <ResponsePlanTable />
-        <CaseTable />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+          <ResponsePlanTable />
+          <CaseTable />
+        </div>
       </main>
     </div>
   );
