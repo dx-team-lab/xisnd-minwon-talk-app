@@ -2,6 +2,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
   title: '민원 커뮤니티 - MinwonTalk',
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-[#F0F4FF]">
         <FirebaseClientProvider>
           {children}
+          <Toaster />
         </FirebaseClientProvider>
       </body>
     </html>

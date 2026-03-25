@@ -13,6 +13,8 @@ import { Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
+import AddRecordModal from '@/components/dashboard/AddRecordModal';
+import { Plus } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
@@ -26,6 +28,8 @@ export default function DashboardPage() {
     type: [],
     compensation: []
   });
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -164,13 +168,25 @@ export default function DashboardPage() {
       <Header />
       <HeroBanner />
       <main className="container mx-auto px-4 py-8 space-y-12">
-        <FilterBar 
-          filters={filters} 
-          onFilterChange={handleFilterChange} 
-          onRemoveFilter={removeFilter} 
-          onReset={resetFilters}
-          resultCount={filteredGuides.length + filteredCases.length}
-        />
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-slate-900 font-headline">현황판</h2>
+            <Button 
+              onClick={() => setIsAddModalOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 h-11 px-6 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95"
+            >
+              <Plus className="h-5 w-5" />
+              <span>새 데이터 등록</span>
+            </Button>
+          </div>
+          <FilterBar 
+            filters={filters} 
+            onFilterChange={handleFilterChange} 
+            onRemoveFilter={removeFilter} 
+            onReset={resetFilters}
+            resultCount={filteredGuides.length + filteredCases.length}
+          />
+        </div>
         {/* Layout Changed to Vertical Stack */}
         <div className="flex flex-col gap-8">
           <ResponsePlanTable 
@@ -184,6 +200,11 @@ export default function DashboardPage() {
           />
         </div>
       </main>
+
+      <AddRecordModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+      />
     </div>
   );
 }
