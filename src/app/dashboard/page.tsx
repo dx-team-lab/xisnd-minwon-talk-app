@@ -60,7 +60,7 @@ export default function DashboardPage() {
   // Filter Logic for Guides (Reacts only to Region, Phase, Type)
   const filteredGuides = useMemo(() => {
     if (!rawGuides) return [];
-    if (!isResponseFilterActive) return []; // Stay in Process Flow if these filters aren't used
+    // 필터가 없더라도 전체 데이터를 보여주도록 수정
     
     return rawGuides.filter(g => {
       const matchRegion = filters.region.length === 0 || filters.region.includes(g.region);

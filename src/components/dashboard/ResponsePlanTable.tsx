@@ -33,7 +33,7 @@ interface ResponsePlanTableProps {
 }
 
 export default function ResponsePlanTable({ data, isLoading, isFilterActive }: ResponsePlanTableProps) {
-  const displayData = isFilterActive ? (data || []) : SAMPLE_RESPONSE_DATA;
+  const displayData = data && data.length > 0 ? data : [];
 
   return (
     <Card className="rounded-xl border-slate-200 overflow-hidden shadow-sm h-full">

@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { FILTER_OPTIONS, TYPE_BADGE_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 export default function ResponseGuideSection() {
   const db = useFirestore();
@@ -33,6 +34,7 @@ export default function ResponseGuideSection() {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const guidesQuery = useMemoFirebase(() => query(collection(db, 'responseGuides'), orderBy('createdAt', 'desc')), [db]);
   const { data: guides, isLoading } = useCollection(guidesQuery);
@@ -105,6 +107,40 @@ export default function ResponseGuideSection() {
     }
   };
 
+  const handleExcelImport = async () => {
+    setIsImporting(true);
+    try {
+      const response = await fetch('/지역-단계-유형-원인-조치방안_v1_7.xlsx');
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer);
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(sheet);
+
+      let successCount = 0;
+      for (const row of data as any[]) {
+        const payload = {
+          region: row['지역'] || '',
+          phase: row['단계'] || '',
+          type: row['유형'] ? row['유형'].split(',').map((t: string) => t.trim()) : [],
+          cause: row['원인'] || '',
+          action: row['조치방안(번호형)'] || '',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          createdBy: user?.uid || 'system'
+        };
+        addDocumentNonBlocking(collection(db, 'responseGuides'), payload);
+        successCount++;
+      }
+      toast({ title: "임포트 완료", description: `${successCount}개의 데이터가 Firestore에 등록되었습니다.` });
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({ title: "임포트 실패", description: "엑셀 파일을 읽는 중 오류가 발생했습니다.", variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Input Form */}
@@ -114,6 +150,16 @@ export default function ResponseGuideSection() {
             {editingId ? <Edit2 className="h-5 w-5 text-amber-500" /> : <PlusCircle className="h-5 w-5 text-primary" />}
             대응 방안 {editingId ? '수정' : '신규 등록'}
           </CardTitle>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExcelImport} 
+            disabled={isImporting}
+            className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+          >
+            {isImporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
+            엑셀 데이터 가져오기
+          </Button>
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
