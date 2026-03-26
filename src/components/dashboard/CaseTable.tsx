@@ -63,7 +63,7 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
             <Table className="min-w-[1500px]">
               <TableHeader className="bg-slate-50 border-b">
                 <TableRow>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-xs">현장명</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[220px] border-r text-xs">현장명</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-xs">지역</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-xs">유형</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 w-[200px] border-r text-xs">민원 내용</TableHead>
@@ -72,7 +72,7 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                   <TableHead className="h-12 font-bold text-slate-700 w-[150px] border-r text-xs">요구사항</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-xs">발생 일시</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[80px] border-r text-xs">진행경과</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 w-[200px] border-r text-xs">상세내용</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 w-[120px] border-r text-xs">상세내용</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-xs">보상방식</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-right w-[120px] text-xs">보상금액(원)</TableHead>
                 </TableRow>
@@ -81,7 +81,7 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                 {displayData.length > 0 ? (
                   displayData.map((item, idx) => (
                     <TableRow key={idx} className="hover:bg-slate-50 transition-colors">
-                      <TableCell className="p-3 text-sm font-medium text-slate-700 border-r">
+                      <TableCell className="p-3 text-sm font-medium text-slate-700 border-r whitespace-nowrap truncate max-w-[220px]">
                         {item.siteName}
                       </TableCell>
                       <TableCell className="p-3 text-center text-xs font-bold text-slate-500 whitespace-nowrap border-r">
@@ -137,7 +137,7 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                           {item.progress}
                         </Badge>
                       </TableCell>
-                      <TableCell className="p-3 text-xs text-slate-600 border-r leading-relaxed">
+                      <TableCell className="p-3 text-xs text-slate-600 border-r leading-relaxed truncate max-w-[120px]">
                         {item.details}
                       </TableCell>
                       <TableCell className="p-3 border-r text-center">
