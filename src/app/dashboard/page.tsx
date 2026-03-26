@@ -28,6 +28,7 @@ export default function DashboardPage() {
     type: []
   });
 
+  const [searchKeyword, setSearchKeyword] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => {
@@ -68,9 +69,14 @@ export default function DashboardPage() {
         (Array.isArray(g.type) 
           ? g.type.some(t => filters.type.includes(t))
           : filters.type.includes(g.type));
-      return matchRegion && matchPhase && matchType;
+          
+      const matchKeyword = !searchKeyword || 
+        (g.cause || '').includes(searchKeyword) || 
+        (g.action || '').includes(searchKeyword);
+        
+      return matchRegion && matchPhase && matchType && matchKeyword;
     });
-  }, [rawGuides, filters.region, filters.phase, filters.type, isResponseFilterActive]);
+  }, [rawGuides, filters.region, filters.phase, filters.type, isResponseFilterActive, searchKeyword]);
 
   // Filter Logic for Cases (Reacts to all 4 filters)
   const filteredCases = useMemo(() => {
@@ -83,9 +89,14 @@ export default function DashboardPage() {
           ? c.type.some(t => filters.type.includes(t))
           : filters.type.includes(c.type));
           
-      return matchRegion && matchPhase && matchType;
+      const matchKeyword = !searchKeyword || 
+        (c.siteName || '').includes(searchKeyword) || 
+        (c.complaintContent || '').includes(searchKeyword) ||
+        (c.details || '').includes(searchKeyword);
+          
+      return matchRegion && matchPhase && matchType && matchKeyword;
     });
-  }, [rawCases, filters]);
+  }, [rawCases, filters, searchKeyword]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -120,6 +131,7 @@ export default function DashboardPage() {
 
   const resetFilters = () => {
     setFilters({ region: [], phase: [], type: [] });
+    setSearchKeyword('');
   };
 
   if (isUserLoading || isProfileLoading) {
@@ -178,7 +190,10 @@ export default function DashboardPage() {
             onFilterChange={handleFilterChange} 
             onRemoveFilter={removeFilter} 
             onReset={resetFilters}
-            resultCount={filteredGuides.length + filteredCases.length}
+            guideCount={filteredGuides.length}
+            caseCount={filteredCases.length}
+            searchKeyword={searchKeyword}
+            onSearchChange={setSearchKeyword}
           />
         </div>
         {/* Layout Changed to Vertical Stack */}

@@ -2,6 +2,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FILTER_OPTIONS } from '@/lib/constants';
 import { Search, RotateCcw, Download, X } from 'lucide-react';
@@ -13,10 +14,13 @@ interface FilterBarProps {
   onFilterChange: (key: string, value: string) => void;
   onRemoveFilter: (key: string, value: string) => void;
   onReset: () => void;
-  resultCount: number;
+  guideCount: number;
+  caseCount: number;
+  searchKeyword: string;
+  onSearchChange: (val: string) => void;
 }
 
-export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onReset, resultCount }: FilterBarProps) {
+export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onReset, guideCount, caseCount, searchKeyword, onSearchChange }: FilterBarProps) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border bg-white p-6 shadow-sm">
@@ -45,10 +49,16 @@ export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onR
           ))}
 
           <div className="flex items-center gap-2 ml-auto pb-0.5">
-            <Button size="icon" className="bg-primary hover:bg-primary/90 rounded-lg">
-              <Search className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={onReset} className="rounded-lg">
+            <div className="relative min-w-[280px]">
+              <Input 
+                placeholder="검색어를 입력해 주세요" 
+                value={searchKeyword}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-10 h-10 bg-white rounded-xl border-slate-200"
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            </div>
+            <Button variant="outline" size="icon" onClick={onReset} className="h-10 w-10 rounded-xl">
               <RotateCcw className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="icon" className="rounded-lg">
@@ -75,7 +85,11 @@ export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onR
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold">검색결과 <span className="text-primary">{resultCount}건</span></span>
+            <span className="text-lg font-bold">
+              검색결과 <span className="text-slate-300 mx-2">|</span> 
+              대응 방안: <span className="text-primary">{guideCount}건</span> <span className="text-slate-300 mx-2">|</span> 
+              유사 사례: <span className="text-primary">{caseCount}건</span>
+            </span>
           </div>
         </div>
       </div>
