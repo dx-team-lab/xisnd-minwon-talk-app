@@ -25,8 +25,7 @@ export default function DashboardPage() {
   const [filters, setFilters] = useState<Record<string, string[]>>({
     region: [],
     phase: [],
-    type: [],
-    compensation: []
+    type: []
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -83,13 +82,8 @@ export default function DashboardPage() {
         (Array.isArray(c.type) 
           ? c.type.some(t => filters.type.includes(t))
           : filters.type.includes(c.type));
-      
-      const matchComp = filters.compensation.length === 0 || 
-        (Array.isArray(c.requestType) 
-          ? c.requestType.some(rt => filters.compensation.includes(rt))
-          : filters.compensation.includes(c.requestType));
           
-      return matchRegion && matchPhase && matchType && matchComp;
+      return matchRegion && matchPhase && matchType;
     });
   }, [rawCases, filters]);
 
@@ -125,7 +119,7 @@ export default function DashboardPage() {
   };
 
   const resetFilters = () => {
-    setFilters({ region: [], phase: [], type: [], compensation: [] });
+    setFilters({ region: [], phase: [], type: [] });
   };
 
   if (isUserLoading || isProfileLoading) {
