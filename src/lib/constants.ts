@@ -58,4 +58,4 @@ export const BADGE_COLORS = {
 
 export const REQUEST_TYPE_OPTIONS = ['정신적피해보상', '영업피해보상', '재산피해보상', '분쟁조정', '대인피해보상', '행정처분'];
 export const COMPENSATION_STATUS_OPTIONS = ['보상', '미보상', '시설보수', '현물보상', '안전진단', '예방활동'];
-export const PROGRESS_OPTIONS = ['접수', '조사중', '협의중', '종결', '행정소송'];
+export const PROGRESS_OPTIONS = ['접수', '진행', '종결'];
