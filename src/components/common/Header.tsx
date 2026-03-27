@@ -34,9 +34,11 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      alert("로그아웃 되었습니다.");
       router.push('/');
     } catch (error) {
       console.error("Logout error:", error);
+      alert("로그아웃 처리 중 오류가 발생했습니다.");
     }
   };
 
@@ -99,7 +101,7 @@ export default function Header() {
               variant="outline" 
               size="sm" 
               onClick={handleLogout}
-              className="hidden md:flex items-center gap-2 text-destructive border-destructive/20 hover:bg-destructive/5"
+              className="flex items-center gap-2 text-slate-500 border-slate-200 hover:text-destructive hover:border-destructive/20 hover:bg-destructive/5 transition-colors"
             >
               <LogOut className="h-4 w-4" />
               로그아웃

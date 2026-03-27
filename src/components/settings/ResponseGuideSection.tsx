@@ -35,6 +35,8 @@ export default function ResponseGuideSection() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const guidesQuery = useMemoFirebase(() => query(collection(db, 'responseGuides'), orderBy('createdAt', 'desc')), [db]);
   const { data: guides, isLoading } = useCollection(guidesQuery);
@@ -129,42 +131,45 @@ export default function ResponseGuideSection() {
           const sheet = workbook.Sheets[sheetName];
           const data = XLSX.utils.sheet_to_json(sheet);
 
+          // 지역명 매핑: '상업지역' → '상업'
           const mapRegion = (raw: string) => {
+            if (!raw) return '';
             if (raw.includes('공업')) return '공업';
             if (raw.includes('민감')) return '민감';
             if (raw.includes('상업')) return '상업';
             if (raw.includes('주거')) return '주거';
-            return raw;
-          };
-
-          const mapPhase = (raw: string) => {
-            if (raw.includes('착수') || raw.includes('착공전')) return '착공전';
-            if (raw.includes('철거') || raw.includes('토공')) return '토공';
-            if (raw.includes('골조')) return '골조';
-            if (raw.includes('마감')) return '마감';
-            if (raw.includes('준공')) return '준공';
-            return raw;
+            return raw.replace('지역', '').trim();
           };
 
           let successCount = 0;
           for (const row of data as any[]) {
-            const payload = {
-              region: mapRegion(row['지역'] || ''),
-              phase: mapPhase(row['단계'] || ''),
-              type: row['유형'] ? row['유형'].split(',').map((t: string) => t.trim()) : [],
-              cause: row['원인'] || '',
-              action: row['조치방안(번호형)'] || '',
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-              createdBy: user?.uid || 'system'
-            };
-            addDocumentNonBlocking(collection(db, 'responseGuides'), payload);
-            successCount++;
+            try {
+              // 유형: 콤마 기준 배열 변환 + 띄어쓰기 완전 제거
+              const rawType = row['유형'] || '';
+              const cleanType = rawType
+                ? String(rawType).split(',').map((t: string) => t.replace(/\s+/g, ''))
+                : [];
+
+              const payload = {
+                region: mapRegion(String(row['지역'] || '')),
+                phase: String(row['단계'] || ''),
+                type: cleanType,
+                cause: String(row['원인'] || ''),
+                action: String(row['조치방안'] || ''),
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                createdBy: user?.uid || 'system'
+              };
+              addDocumentNonBlocking(collection(db, 'responseGuides'), payload);
+              successCount++;
+            } catch (rowError) {
+              console.error(`행 ${successCount + 1} 처리 중 오류:`, rowError, '행 데이터:', row);
+            }
           }
           toast({ title: "임포트 완료", description: `${successCount}개의 데이터가 Firestore에 등록되었습니다.` });
         } catch (error) {
-          console.error("Parse error inside onload:", error);
-          toast({ title: "임포트 실패", description: "엑셀 파일 형식이 잘못되었거나 데이터를 파싱할 수 없습니다.", variant: "destructive" });
+          console.error("Parse error inside onload:", error, "error message:", (error as Error)?.message, "stack:", (error as Error)?.stack);
+          toast({ title: "임포트 실패", description: `엑셀 데이터 파싱 오류: ${(error as Error)?.message || '알 수 없는 오류'}`, variant: "destructive" });
         } finally {
           setIsImporting(false);
           if (fileInputRef.current) fileInputRef.current.value = '';
@@ -187,21 +192,21 @@ export default function ResponseGuideSection() {
     }
   };
 
-  const handleClearAll = async () => {
-    if (!confirm('정말 모든 대응 방안 데이터를 삭제하시겠습니까?')) return;
-    setIsImporting(true);
+  const handleDeleteAllConfirm = async () => {
+    setIsDeletingAll(true);
     try {
       let count = 0;
       for (const g of guides || []) {
         deleteDocumentNonBlocking(doc(db, 'responseGuides', g.id));
         count++;
       }
-      toast({ title: "삭제 완료", description: `${count}개의 데이터를 삭제했습니다.` });
+      toast({ title: "삭제 완료", description: "모든 대응 방안이 삭제되었습니다." });
     } catch (error) {
       console.error('Clear error:', error);
       toast({ title: "삭제 실패", description: "데이터 삭제 중 오류가 발생했습니다.", variant: "destructive" });
     } finally {
-      setIsImporting(false);
+      setIsDeletingAll(false);
+      setShowDeleteAllConfirm(false);
     }
   };
 
@@ -209,37 +214,39 @@ export default function ResponseGuideSection() {
     <div className="space-y-8">
       {/* Input Form */}
       <Card className="rounded-xl border-slate-200 shadow-sm">
-        <CardHeader className="border-b bg-slate-50/50">
+        <CardHeader className="border-b bg-slate-50/50 flex flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             {editingId ? <Edit2 className="h-5 w-5 text-amber-500" /> : <PlusCircle className="h-5 w-5 text-primary" />}
             대응 방안 {editingId ? '수정' : '신규 등록'}
           </CardTitle>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept=".xlsx, .xls" 
-            onChange={handleExcelImport} 
-          />
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleExcelImportClick} 
-            disabled={isImporting}
-            className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-          >
-            {isImporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
-            엑셀 데이터 가져오기
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleClearAll} 
-            disabled={isImporting}
-            className="text-slate-400 hover:text-destructive"
-          >
-            전체 삭제
-          </Button>
+          <div className="flex items-center gap-2">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept=".xlsx, .xls" 
+              onChange={handleExcelImport} 
+            />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExcelImportClick} 
+              disabled={isImporting}
+              className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+            >
+              {isImporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
+              엑셀 데이터 가져오기
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowDeleteAllConfirm(true)} 
+              disabled={isImporting || isDeletingAll}
+              className="text-slate-400 hover:text-destructive"
+            >
+              전체 삭제
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -398,6 +405,14 @@ export default function ResponseGuideSection() {
         onConfirm={handleDeleteConfirm}
         title="대응 방안 삭제"
         description="정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteAllConfirm}
+        onClose={() => setShowDeleteAllConfirm(false)}
+        onConfirm={handleDeleteAllConfirm}
+        title="대응 방안 전체 삭제"
+        description="정말 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
       />
     </div>
   );

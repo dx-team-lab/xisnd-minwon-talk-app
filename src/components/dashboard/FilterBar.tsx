@@ -1,6 +1,8 @@
 
 'use client';
 
+import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,9 +20,16 @@ interface FilterBarProps {
   caseCount: number;
   searchKeyword: string;
   onSearchChange: (val: string) => void;
+  onDownload?: () => void;
 }
 
-export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onReset, guideCount, caseCount, searchKeyword, onSearchChange }: FilterBarProps) {
+export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onReset, guideCount, caseCount, searchKeyword, onSearchChange, onDownload }: FilterBarProps) {
+  const [resetKey, setResetKey] = useState(0);
+
+  const handleReset = () => {
+    onReset();
+    setResetKey(prev => prev + 1);
+  };
   return (
     <div className="space-y-4">
       <div className="rounded-xl border bg-white p-6 shadow-sm">
@@ -35,7 +44,7 @@ export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onR
               <Label className="text-xs font-bold text-slate-500 ml-1">
                 {config.label}
               </Label>
-              <Select onValueChange={(val) => onFilterChange(key, val)}>
+              <Select key={`${key}-${resetKey}`} onValueChange={(val) => onFilterChange(key, val)}>
                 <SelectTrigger className="bg-slate-50 border-slate-200">
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
@@ -58,10 +67,10 @@ export default function FilterBar({ filters, onFilterChange, onRemoveFilter, onR
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             </div>
-            <Button variant="outline" size="icon" onClick={onReset} className="h-10 w-10 rounded-xl">
+            <Button variant="outline" size="icon" onClick={handleReset} className="h-10 w-10 rounded-xl">
               <RotateCcw className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" className="rounded-lg">
+            <Button variant="outline" size="icon" onClick={onDownload} className="rounded-lg h-10 w-10 hidden">
               <Download className="h-4 w-4" />
             </Button>
           </div>

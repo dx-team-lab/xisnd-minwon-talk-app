@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { TYPE_BADGE_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -32,9 +32,26 @@ interface ResponsePlanTableProps {
   data: any[] | null;
   isLoading: boolean;
   isFilterActive: boolean;
+  actionLinkDict?: Record<string, string>;
 }
 
-export default function ResponsePlanTable({ data, isLoading, isFilterActive }: ResponsePlanTableProps) {
+// Parse action text like "1) 통제원 배치\n2) 외곽 대기 유도" into array of items
+function parseActionItems(action: string): string[] {
+  if (!action) return [];
+  // Split by newline or by numbered pattern like "1) ", "2) "
+  const items = action.split(/\n/).flatMap(line => {
+    // Further split if multiple numbered items on same line
+    return line.split(/(?=\d+\))/).map(s => s.trim()).filter(Boolean);
+  });
+  return items;
+}
+
+// Strip leading number+bracket like "1) " or "2) " to get clean text
+function stripNumbering(item: string): string {
+  return item.replace(/^\d+\)\s*/, '').trim();
+}
+
+export default function ResponsePlanTable({ data, isLoading, isFilterActive, actionLinkDict = {} }: ResponsePlanTableProps) {
   const [rowsPerPage, setRowsPerPage] = useState('10');
 
   const filteredData = data && data.length > 0 ? data : [];
@@ -74,7 +91,7 @@ export default function ResponsePlanTable({ data, isLoading, isFilterActive }: R
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[100px] text-sm">단계</TableHead>
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[120px] text-sm">유형</TableHead>
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-sm w-[250px]">원인</TableHead>
-                <TableHead className="h-12 font-bold text-slate-700 text-sm min-w-[300px]">조치방안(번호형)</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 text-sm min-w-[300px]">조치방안</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -82,17 +99,17 @@ export default function ResponsePlanTable({ data, isLoading, isFilterActive }: R
                 displayData.map((row, idx) => (
                   <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
                     <TableCell className="border-r text-center align-top p-4">
-                      <Badge 
-                        variant="outline" 
-                        className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-bold whitespace-nowrap"
+                      <Badge
+                        variant="outline"
+                        className="bg-emerald-50 text-emerald-700 border-none rounded-full text-xs font-bold whitespace-nowrap px-2.5 py-0.5"
                       >
                         {row.region}
                       </Badge>
                     </TableCell>
                     <TableCell className="border-r text-center align-top p-4">
-                      <Badge 
-                        variant="outline" 
-                        className="bg-orange-50 text-orange-700 border-orange-200 text-xs font-bold whitespace-nowrap"
+                      <Badge
+                        variant="outline"
+                        className="bg-orange-50 text-orange-700 border-none rounded-full text-xs font-bold whitespace-nowrap px-2.5 py-0.5"
                       >
                         {row.phase}
                       </Badge>
@@ -100,29 +117,47 @@ export default function ResponsePlanTable({ data, isLoading, isFilterActive }: R
                     <TableCell className="border-r text-center align-top p-4">
                       <div className="flex flex-wrap justify-center gap-1.5">
                         {Array.isArray(row.type) ? row.type.map((t: string) => (
-                          <Badge 
-                            key={t} 
-                            variant="outline" 
-                            className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold whitespace-nowrap"
+                          <Badge
+                            key={t}
+                            variant="outline"
+                            className="bg-blue-50 text-blue-700 border-none rounded-full text-xs font-bold whitespace-nowrap px-2.5 py-0.5"
                           >
                             {t}
                           </Badge>
                         )) : (
-                          <Badge 
-                            variant="outline" 
-                            className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold whitespace-nowrap"
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-50 text-blue-700 border-none rounded-full text-xs font-bold whitespace-nowrap px-2.5 py-0.5"
                           >
                             {row.type}
                           </Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="border-r align-top p-4 text-sm leading-relaxed text-slate-700">
+                    <TableCell className="border-r align-top p-4 text-sm leading-relaxed text-slate-700 font-medium">
                       {row.cause}
                     </TableCell>
                     <TableCell className="align-top p-4 text-sm leading-relaxed text-slate-600">
-                      <div className="whitespace-pre-wrap">
-                        {row.action}
+                      <div className="flex flex-col gap-1">
+                        {parseActionItems(row.action).map((item, i) => {
+                          const cleanText = stripNumbering(item);
+                          const linkUrl = actionLinkDict[cleanText];
+                          return (
+                            <div key={i} className="flex items-start gap-2">
+                              <span className="whitespace-pre-wrap">{item}</span>
+                              {linkUrl && (
+                                <a
+                                  href={linkUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline flex items-center gap-0.5 shrink-0 text-xs font-semibold mt-0.5"
+                                >
+                                  [문서 보기] <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </TableCell>
                   </TableRow>

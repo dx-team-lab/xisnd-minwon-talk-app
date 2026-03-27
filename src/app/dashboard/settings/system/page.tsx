@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Settings2 } from 'lucide-react';
 import ResponseGuideSection from '@/components/settings/ResponseGuideSection';
 import CaseExampleSection from '@/components/settings/CaseExampleSection';
+import ActionPlanLinkSection from '@/components/settings/ActionPlanLinkSection';
 
 export default function SystemSettingsPage() {
   const { user, isUserLoading } = useUser();
@@ -67,12 +68,15 @@ export default function SystemSettingsPage() {
         </div>
 
         <Tabs defaultValue="response" className="w-full">
-          <TabsList className="bg-white border w-full md:w-auto grid grid-cols-2 md:inline-flex rounded-xl p-1 h-auto">
+          <TabsList className="bg-white border w-full md:w-auto grid grid-cols-3 md:inline-flex rounded-xl p-1 h-auto">
             <TabsTrigger value="response" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
               대응 방안
             </TabsTrigger>
             <TabsTrigger value="case" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
               사례
+            </TabsTrigger>
+            <TabsTrigger value="actionLinks" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+              조치방안(링크)
             </TabsTrigger>
           </TabsList>
           
@@ -82,6 +86,9 @@ export default function SystemSettingsPage() {
             </TabsContent>
             <TabsContent value="case">
               <CaseExampleSection />
+            </TabsContent>
+            <TabsContent value="actionLinks">
+              <ActionPlanLinkSection />
             </TabsContent>
           </div>
         </Tabs>
