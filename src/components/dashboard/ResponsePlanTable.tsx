@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ExternalLink, ChevronLeft, ChevronRight, SearchX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { TYPE_BADGE_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -202,8 +202,12 @@ export default function ResponsePlanTable({ data, isLoading, isFilterActive, act
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-24 text-slate-400">
-                    데이터가 없습니다.
+                  <TableCell colSpan={5} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <SearchX className="h-12 w-12 text-slate-300 mb-4" />
+                      <p className="text-slate-600 font-medium">검색 조건에 맞는 데이터가 없습니다.</p>
+                      <p className="text-slate-400 text-sm mt-1">다른 검색어를 입력하거나 필터 조건을 변경해 보세요.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
