@@ -1,16 +1,30 @@
 'use client';
 
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import Header from '@/components/common/Header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Info } from 'lucide-react';
 
 export default function ResponseProcedurePage() {
+  const { user, isUserLoading } = useUser();
   const db = useFirestore();
+  const router = useRouter();
 
-  const procedureDocRef = useMemoFirebase(() => doc(db, 'settings', 'procedure'), [db]);
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/');
+    }
+  }, [user, isUserLoading, router]);
+
+  const procedureDocRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, 'settings', 'procedure');
+  }, [db, user]);
   const { data: procedureData, isLoading } = useDoc(procedureDocRef);
+
 
   if (isLoading) {
     return (

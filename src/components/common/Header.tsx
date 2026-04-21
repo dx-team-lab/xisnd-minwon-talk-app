@@ -25,14 +25,14 @@ export default function Header() {
   const { data: userProfile } = useDoc(userProfileRef);
 
   const adminsQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user) return null;
     return collection(db, 'roles_admin');
-  }, [db]);
+  }, [db, user]);
   
   const managersQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user) return null;
     return collection(db, 'roles_manager');
-  }, [db]);
+  }, [db, user]);
   
   const { data: admins } = useCollection(adminsQuery);
   const { data: managers } = useCollection(managersQuery);
@@ -44,11 +44,9 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      alert("로그아웃 되었습니다.");
       router.push('/');
     } catch (error) {
       console.error("Logout error:", error);
-      alert("로그아웃 처리 중 오류가 발생했습니다.");
     }
   };
 
