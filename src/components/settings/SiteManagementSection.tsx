@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, doc, serverTimestamp, query, orderBy, deleteDoc, getDocs, addDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, orderBy, deleteDoc, getDocs, addDoc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Trash2, Edit2, PlusCircle, RotateCcw, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
-import { Site, SiteImage } from '@/lib/types';
+import { Site, SiteImage, SiteComplaint } from '@/lib/types';
 import { compressImageToBase64 } from '@/lib/imageUtils';
 
 const REGION_OPTIONS = [
@@ -47,7 +47,14 @@ export default function SiteManagementSection() {
   
   const [images, setImages] = useState<{fileName: string, base64: string}[]>([]);
   const [existingImages, setExistingImages] = useState<SiteImage[]>([]);
+  const [complaints, setComplaints] = useState<Partial<SiteComplaint>[]>([]);
+  const [existingComplaints, setExistingComplaints] = useState<SiteComplaint[]>([]);
+  const [expandedComplaints, setExpandedComplaints] = useState<number[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  const toggleComplaintExpanded = (idx: number) => {
+    setExpandedComplaints(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+  };
 
   const sitesQuery = useMemoFirebase(() => query(collection(db, 'sites'), orderBy('order', 'asc')), [db]);
   const { data: sites, isLoading } = useCollection(sitesQuery);
@@ -70,6 +77,9 @@ export default function SiteManagementSection() {
     setEditingId(null);
     setImages([]);
     setExistingImages([]);
+    setComplaints([]);
+    setExistingComplaints([]);
+    setExpandedComplaints([]);
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,6 +136,24 @@ export default function SiteManagementSection() {
       return;
     }
 
+    // Validate complaints
+    const numSet = new Set();
+    for (const c of complaints) {
+      if (!c.complainant?.trim() || !c.usage?.trim() || !c.owner?.trim() || c.number === undefined) {
+        toast({ title: "입력 오류", description: "민원인 상세 정보의 빈 칸을 모두 채워주세요.", variant: "destructive" });
+        return;
+      }
+      if (!c.stage) {
+        toast({ title: "입력 오류", description: "민원인 상세 정보에서 현재 진행 단계를 선택해 주세요.", variant: "destructive" });
+        return;
+      }
+      if (numSet.has(c.number)) {
+        toast({ title: "입력 오류", description: `순번 ${c.number}이(가) 중복되었습니다. 서로 다른 번호를 입력해 주세요.`, variant: "destructive" });
+        return;
+      }
+      numSet.add(c.number);
+    }
+
     setIsUploading(true);
 
     const payload = {
@@ -163,6 +191,38 @@ export default function SiteManagementSection() {
           });
         }
       }
+
+      // Handle Complaints Save
+      if (targetSiteId) {
+        // Find deleted complaints
+        const existingIds = existingComplaints.map(ec => ec.id);
+        const currentIds = complaints.map(c => c.id).filter(id => id); // Get defined IDs
+        const deletedIds = existingIds.filter(id => !currentIds.includes(id as string));
+        
+        for (const  deletedId of deletedIds) {
+          await deleteDoc(doc(db, `sites/${targetSiteId}/complaints`, deletedId as string));
+        }
+
+        // Add or Update
+        for (let i = 0; i < complaints.length; i++) {
+          const c = complaints[i];
+          const cPayload = {
+            complainant: c.complainant,
+            usage: c.usage,
+            owner: c.owner,
+            status: c.status,
+            number: Number(c.number || i + 1),
+            order: Number(c.order || i),
+            stage: c.stage,
+            stageDetails: c.stageDetails || {}
+          };
+          if (c.id) {
+            await updateDoc(doc(db, `sites/${targetSiteId}/complaints`, c.id), cPayload);
+          } else {
+            await addDoc(collection(db, `sites/${targetSiteId}/complaints`), { ...cPayload, createdAt: serverTimestamp() });
+          }
+        }
+      }
       
       setIsUploading(false);
       handleReset();
@@ -186,11 +246,21 @@ export default function SiteManagementSection() {
     });
     setEditingId(site.id);
     setImages([]);
+    setComplaints([]);
+    setExistingComplaints([]);
+    setExpandedComplaints([]);
     
     // Fetch existing images from subcollection
     const imagesQuery = query(collection(db, `sites/${site.id}/siteImages`), orderBy('order', 'asc'));
     getDocs(imagesQuery).then(snap => {
       setExistingImages(snap.docs.map(d => ({ id: d.id, ...d.data() } as SiteImage)));
+    });
+
+    const compsQuery = query(collection(db, `sites/${site.id}/complaints`), orderBy('order', 'asc'));
+    getDocs(compsQuery).then(snap => {
+      const fetched = snap.docs.map(d => ({ id: d.id, ...d.data() } as SiteComplaint));
+      setExistingComplaints(fetched);
+      setComplaints(fetched);
     });
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -201,12 +271,19 @@ export default function SiteManagementSection() {
       try {
         // Cascade delete subcollection images
         const imagesQuery = query(collection(db, `sites/${deleteConfirmId}/siteImages`));
-        const snap = await getDocs(imagesQuery);
-        for (const docSnap of snap.docs) {
+        const imgSnap = await getDocs(imagesQuery);
+        for (const docSnap of imgSnap.docs) {
           await deleteDoc(docSnap.ref);
         }
+
+        // Cascade delete subcollection complaints
+        const cpQuery = query(collection(db, `sites/${deleteConfirmId}/complaints`));
+        const cpSnap = await getDocs(cpQuery);
+        for (const cSnap of cpSnap.docs) {
+          await deleteDoc(cSnap.ref);
+        }
       } catch (e) {
-        console.warn('Failed to delete subcollection images', e);
+        console.warn('Failed to cascade delete subcollections', e);
       }
       
       deleteDocumentNonBlocking(doc(db, 'sites', deleteConfirmId));
@@ -304,6 +381,186 @@ export default function SiteManagementSection() {
                   value={formData.inProgressCount}
                   onChange={(e) => handleInputChange('inProgressCount', e.target.value)}
                 />
+              </div>
+
+              <div className="space-y-4 lg:col-span-3 pb-2 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-slate-600 block">민원인 상세 목록</label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setComplaints([...complaints, { number: complaints.length + 1, complainant: '', usage: '', owner: '', status: '진행중', order: complaints.length, stage: '민원 발생', stageDetails: {} }])}
+                    className="gap-1 h-8"
+                  >
+                    <PlusCircle className="h-4 w-4" /> 민원인 추가
+                  </Button>
+                </div>
+                
+                {complaints.length > 0 && (
+                  <div className="space-y-3">
+                    {complaints.map((c, idx) => (
+                      <div key={idx} className="flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div className="flex flex-col sm:flex-row gap-3 items-center">
+                          <Input 
+                            className="w-full sm:w-[60px]" 
+                            placeholder="순번" 
+                            type="number" 
+                            value={c.number || ''} 
+                            onChange={(e) => {
+                              const newArr = [...complaints];
+                              newArr[idx] = { ...newArr[idx], number: parseInt(e.target.value) };
+                              setComplaints(newArr);
+                            }} 
+                          />
+                          <Input 
+                            className="w-full sm:flex-1 h-auto py-2" 
+                            placeholder="민원인 (예: 팔송길 32)" 
+                            value={c.complainant || ''} 
+                            onChange={(e) => {
+                              const newArr = [...complaints];
+                              newArr[idx] = { ...newArr[idx], complainant: e.target.value };
+                              setComplaints(newArr);
+                            }} 
+                          />
+                          <Textarea 
+                            rows={2}
+                            className="w-full sm:flex-1 min-h-[50px] py-2 resize-y" 
+                            placeholder="용도 (예: 1F~5F(15년) / 8세대)" 
+                            value={c.usage || ''} 
+                            onChange={(e) => {
+                              const newArr = [...complaints];
+                              newArr[idx] = { ...newArr[idx], usage: e.target.value };
+                              setComplaints(newArr);
+                            }} 
+                          />
+                          <Textarea 
+                            rows={2}
+                            className="w-full sm:flex-1 min-h-[50px] py-2 resize-y" 
+                            placeholder="소유주 (예: 공용주택)" 
+                            value={c.owner || ''} 
+                            onChange={(e) => {
+                              const newArr = [...complaints];
+                              newArr[idx] = { ...newArr[idx], owner: e.target.value };
+                              setComplaints(newArr);
+                            }} 
+                          />
+                          <Select 
+                            value={c.status || '진행중'} 
+                            onValueChange={(val) => {
+                              const newArr = [...complaints];
+                              newArr[idx] = { ...newArr[idx], status: val as '완료' | '진행중' };
+                              setComplaints(newArr);
+                            }}
+                          >
+                            <SelectTrigger className="w-full sm:w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="진행중">진행중</SelectItem>
+                              <SelectItem value="완료">완료</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button type="button" variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 rounded-full" onClick={() => setComplaints(comp => comp.filter((_, i) => i !== idx))}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200"
+                          onClick={() => toggleComplaintExpanded(idx)}
+                        >
+                          {expandedComplaints.includes(idx) ? '상세 입력 닫기 ▲' : '상세 입력 열기 ▼'}
+                        </Button>
+                        {expandedComplaints.includes(idx) && (
+                          <div className="pt-4 mt-2 border-t border-slate-200 space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-slate-600">현재 진행 단계 *</label>
+                              <Select 
+                                value={c.stage || ''} 
+                                onValueChange={(val) => {
+                                  const newArr = [...complaints];
+                                  newArr[idx] = { ...newArr[idx], stage: val as any };
+                                  setComplaints(newArr);
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="진행 단계 선택" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="민원 발생">민원 발생</SelectItem>
+                                  <SelectItem value="민원 대응">민원 대응</SelectItem>
+                                  <SelectItem value="보상 협상">보상 협상</SelectItem>
+                                  <SelectItem value="합의 및 집행">합의 및 집행</SelectItem>
+                                  <SelectItem value="완료">완료</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-slate-600">민원 발생 내용</label>
+                              <Textarea 
+                                className="resize-y min-h-[60px]"
+                                placeholder="예) 2025.09.17 현장 앞 현수막 게시(소음, 진동 등 정신적 피해 주장)"
+                                value={c.stageDetails?.occurrence || ''}
+                                onChange={(e) => {
+                                  const newArr = [...complaints];
+                                  newArr[idx] = { ...newArr[idx], stageDetails: { ...newArr[idx].stageDetails, occurrence: e.target.value } };
+                                  setComplaints(newArr);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-slate-600">민원 대응 내용</label>
+                              <Textarea 
+                                className="resize-y min-h-[60px]"
+                                placeholder="예) 2025.10.17 1차 주민 간담회(상황 설명 및 양해 요청 안내)"
+                                value={c.stageDetails?.response || ''}
+                                onChange={(e) => {
+                                  const newArr = [...complaints];
+                                  newArr[idx] = { ...newArr[idx], stageDetails: { ...newArr[idx].stageDetails, response: e.target.value } };
+                                  setComplaints(newArr);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-slate-600">보상 협상 내용</label>
+                              <Textarea 
+                                className="resize-y min-h-[60px]"
+                                placeholder="예) 2025.11.24 시의원 참석 및 의견 청취"
+                                value={c.stageDetails?.negotiation || ''}
+                                onChange={(e) => {
+                                  const newArr = [...complaints];
+                                  newArr[idx] = { ...newArr[idx], stageDetails: { ...newArr[idx].stageDetails, negotiation: e.target.value } };
+                                  setComplaints(newArr);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-slate-600">합의 및 집행 내용</label>
+                              <Textarea 
+                                className="resize-y min-h-[60px]"
+                                placeholder="예) 2026.04.03 민원처리비 집행 계획 품의"
+                                value={c.stageDetails?.agreement || ''}
+                                onChange={(e) => {
+                                  const newArr = [...complaints];
+                                  newArr[idx] = { ...newArr[idx], stageDetails: { ...newArr[idx].stageDetails, agreement: e.target.value } };
+                                  setComplaints(newArr);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {complaints.length === 0 && (
+                  <div className="text-center py-6 text-slate-400 text-sm border hover:bg-slate-50 transition-colors border-dashed rounded-lg border-slate-300">
+                    상단의 [민원인 추가] 버튼을 눌러 목록을 구성하세요.<br/>(등록된 민원을 기반으로 완료/진행중 건수가 자동 계산됩니다.)
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2 lg:col-span-2 text-sm">

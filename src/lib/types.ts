@@ -16,11 +16,29 @@ export interface Site {
 }
 
 export interface SiteImage {
-  id: string;
-  base64: string;
+  id: string; // Document ID in subcollection
+  base64: string; // The base64 compressed string 
   fileName: string;
   order: number;
   createdAt: Timestamp;
+}
+
+export interface SiteComplaint {
+  id: string;
+  number: number;
+  complainant: string;
+  usage: string;
+  owner: string;
+  status: '완료' | '진행중';
+  order: number;
+  createdAt: Timestamp;
+  stage?: '민원 발생' | '민원 대응' | '보상 협상' | '합의 및 집행' | '완료' | string;
+  stageDetails?: {
+    occurrence?: string;
+    response?: string;
+    negotiation?: string;
+    agreement?: string;
+  };
 }
 
 export interface UserProfile {
