@@ -39,6 +39,8 @@ export interface SiteComplaint {
     negotiation?: string;
     agreement?: string;
   };
+  responsePlans?: string[]; // Array of IDs or titles from actionPlanLinks
+  similarCases?: { text: string; url?: string }[];
 }
 
 export interface UserProfile {

@@ -2,7 +2,7 @@
 export const FILTER_OPTIONS: Record<string, { label: string; options: string[] }> = {
   region: {
     label: '지역/지구',
-    options: ['전체', '공업', '민감', '상업', '주거']
+    options: ['전체', '공업', '주거', '민감', '상업']
   },
   phase: {
     label: '단계',

@@ -46,13 +46,13 @@ export default function StatusPage() {
           </div>
           <div>
             <h1 className="text-2xl font-headline font-bold text-slate-900">민원 현황</h1>
-            <p className="text-slate-500 text-sm">전체 사업 후보지 및 현장의 민원 처리 현황을 실시간으로 확인합니다.</p>
+            <p className="text-slate-500 text-sm">발생 민원에 대한 경과 내용, 대응 방안, 유사 사례를 확인합니다.</p>
           </div>
         </div>
 
-        <StatusTable 
-          data={sites as Site[]} 
-          isLoading={isSitesLoading} 
+        <StatusTable
+          data={sites as Site[]}
+          isLoading={isSitesLoading}
         />
       </main>
     </div>

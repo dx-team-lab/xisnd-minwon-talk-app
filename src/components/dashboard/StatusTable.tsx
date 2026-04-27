@@ -28,10 +28,12 @@ const STAGES = ['민원 발생', '민원 대응', '보상 협상', '합의 및 �
 const ComplaintDetailsModal = ({ 
   siteName, 
   complaint, 
+  links,
   onClose 
 }: { 
   siteName: string;
   complaint: SiteComplaint;
+  links: any[] | null;
   onClose: () => void;
 }) => {
   useEffect(() => {
@@ -160,7 +162,77 @@ const ComplaintDetailsModal = ({
                      </TableRow>
                    )
                  })}
-               </TableBody>
+                  
+                  {/* 대응 방안 */}
+                  <TableRow className="hover:bg-transparent border-b border-slate-200">
+                    <TableCell className="w-[150px] bg-slate-50 text-center font-bold text-slate-700 border-r border-slate-200 p-4 align-top">
+                      대응 방안
+                    </TableCell>
+                    <TableCell className="p-4 align-top">
+                      {complaint.responsePlans && complaint.responsePlans.length > 0 ? (
+                        <ul className="space-y-1.5 list-none">
+                          {complaint.responsePlans.map((planTitle, idx) => {
+                            const linkInfo = links?.find(l => l.title === planTitle);
+                            return (
+                              <li key={idx} className="text-sm text-slate-700 flex items-center gap-2">
+                                <span className="font-medium">{idx + 1}) {planTitle}</span>
+                                {linkInfo?.url && (
+                                  <a 
+                                    href={linkInfo.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="text-blue-600 hover:underline text-xs flex items-center gap-0.5 ml-1"
+                                  >
+                                    [문서 보기]
+                                  </a>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <span className="text-slate-400">등록된 항목 없음</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+
+                  {/* 유사 사례 */}
+                  <TableRow className="hover:bg-transparent border-b border-slate-200 last:border-0">
+                    <TableCell className="w-[150px] bg-slate-50 text-center font-bold text-slate-700 border-r border-slate-200 p-4 align-top">
+                      유사 사례
+                    </TableCell>
+                    <TableCell className="p-4 align-top">
+                      {complaint.similarCases && complaint.similarCases.length > 0 ? (
+                        <ul className="space-y-2 list-none">
+                          {complaint.similarCases.map((caseItem, idx) => (
+                            <li key={idx} className="text-sm text-slate-700">
+                              <div className="flex items-start gap-2">
+                                <span className="font-medium shrink-0">{idx + 1})</span>
+                                <div className="flex flex-col gap-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <span>{caseItem.text}</span>
+                                    {caseItem.url && (
+                                      <a 
+                                        href={caseItem.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="text-blue-600 hover:underline text-xs"
+                                      >
+                                        [문서 보기]
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-slate-400">등록된 항목 없음</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
              </Table>
           </div>
         </div>
@@ -224,12 +296,14 @@ const ComplaintModal = ({
   completedCount, 
   inProgressCount, 
   complaints, 
+  links,
   onClose 
 }: { 
   siteName: string;
   completedCount: number;
   inProgressCount: number;
   complaints: SiteComplaint[];
+  links: any[] | null;
   onClose: () => void;
 }) => {
   const [selectedComplaint, setSelectedComplaint] = useState<SiteComplaint | null>(null);
@@ -318,6 +392,7 @@ const ComplaintModal = ({
         <ComplaintDetailsModal
           siteName={siteName}
           complaint={selectedComplaint}
+          links={links}
           onClose={() => setSelectedComplaint(null)}
         />
       )}
@@ -337,6 +412,20 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
   const [isFetchingComplaints, setIsFetchingComplaints] = useState(false);
   const db = useFirestore();
   const { toast } = useToast();
+
+  const linksQuery = React.useMemo(() => {
+    if (!db) return null;
+    return query(collection(db, 'actionPlanLinks'), orderBy('createdAt', 'desc'));
+  }, [db]);
+  const [links, setLinks] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (linksQuery) {
+      getDocs(linksQuery).then(snap => {
+        setLinks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+    }
+  }, [linksQuery]);
 
   const handleRowClick = async (siteId: string, siteName: string) => {
     if (isFetchingImages || !db) return;
@@ -399,7 +488,7 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[200px] text-sm">현장명</TableHead>
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[200px] text-sm">단계</TableHead>
                 <TableHead className="h-12 font-bold border-r text-slate-700 w-[240px] text-sm text-center">민원 처리 현황</TableHead>
-                <TableHead className="h-12 font-bold text-slate-700 text-sm pl-6">주요 내용</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 text-sm text-center">주요 내용</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -410,16 +499,16 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
                       className="hover:bg-slate-50/50 transition-colors cursor-pointer"
                       onClick={() => handleRowClick(site.id, site.siteName)}
                     >
-                      <TableCell className="border-r text-center align-middle p-4 font-bold text-slate-700">
+                      <TableCell className="border-r text-center align-middle p-4 font-bold text-slate-700 text-sm">
                         <div className="flex items-center justify-center gap-2">
                           <span>{site.region}</span>
                           <CategoryBadge category="regionType">{site.regionType?.replace('지역', '')}</CategoryBadge>
                         </div>
                       </TableCell>
-                      <TableCell className="border-r text-center align-middle p-4 font-bold text-slate-900">
+                      <TableCell className="border-r text-center align-middle p-4 font-bold text-slate-900 text-sm">
                         {site.siteName}
                       </TableCell>
-                      <TableCell className="border-r text-center align-middle p-4">
+                      <TableCell className="border-r text-center align-middle p-4 text-sm">
                         <div className="flex flex-row flex-wrap justify-center gap-1.5">
                           {(Array.isArray(site.phase) ? site.phase : [site.phase]).filter(Boolean).map((p: string) => (
                             <CategoryBadge key={p} category="phase">{p}</CategoryBadge>
@@ -480,6 +569,7 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
           completedCount={complaintModalData.completedCount}
           inProgressCount={complaintModalData.inProgressCount}
           complaints={complaintModalData.complaints}
+          links={links}
           onClose={() => setComplaintModalData(null)}
         />
       )}

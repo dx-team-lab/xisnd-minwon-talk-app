@@ -68,6 +68,9 @@ export default function SiteManagementSection() {
     setExpandedComplaints(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
   };
 
+  const linksQuery = useMemoFirebase(() => query(collection(db, 'actionPlanLinks'), orderBy('createdAt', 'desc')), [db]);
+  const { data: links } = useCollection(linksQuery);
+
   const sitesQuery = useMemoFirebase(() => query(collection(db, 'sites'), orderBy('order', 'asc')), [db]);
   const { data: sites, isLoading } = useCollection(sitesQuery);
 
@@ -92,6 +95,21 @@ export default function SiteManagementSection() {
     setComplaints([]);
     setExistingComplaints([]);
     setExpandedComplaints([]);
+  };
+
+  const addComplaint = () => {
+    setComplaints([...complaints, { 
+      number: complaints.length + 1, 
+      complainant: '', 
+      usage: '', 
+      owner: '', 
+      status: '진행중', 
+      order: complaints.length, 
+      stage: '민원 발생', 
+      stageDetails: {},
+      responsePlans: [],
+      similarCases: []
+    }]);
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,7 +274,9 @@ export default function SiteManagementSection() {
             number: Number(c.number || i + 1),
             order: Number(c.order || i),
             stage: c.stage,
-            stageDetails: c.stageDetails || {}
+            stageDetails: c.stageDetails || {},
+            responsePlans: c.responsePlans || [],
+            similarCases: c.similarCases || []
           };
           if (c.id) {
             await updateDoc(doc(db, `sites/${targetSiteId}/complaints`, c.id), cPayload);
@@ -471,7 +491,7 @@ export default function SiteManagementSection() {
                     type="button" 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setComplaints([...complaints, { number: complaints.length + 1, complainant: '', usage: '', owner: '', status: '진행중', order: complaints.length, stage: '민원 발생', stageDetails: {} }])}
+                    onClick={addComplaint}
                     className="gap-1 h-8"
                   >
                     <PlusCircle className="h-4 w-4" /> 민원인 추가
@@ -631,6 +651,113 @@ export default function SiteManagementSection() {
                                 }}
                               />
                             </div>
+                            
+                            {/* 대응 방안 (Multi-select) */}
+                            <div className="space-y-3 pt-4 border-t border-slate-200">
+                              <label className="text-sm font-bold text-slate-600 flex items-center gap-2">
+                                <Save className="h-4 w-4" /> 대응 방안 (중복 선택 가능)
+                              </label>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-3 rounded-lg border">
+                                {links && links.length > 0 ? links.map(link => (
+                                  <div key={link.id} className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id={`complaint-${idx}-plan-${link.id}`}
+                                      checked={c.responsePlans?.includes(link.title)}
+                                      onCheckedChange={(checked) => {
+                                        const newArr = [...complaints];
+                                        const currentPlans = newArr[idx].responsePlans || [];
+                                        if (checked) {
+                                          newArr[idx] = { ...newArr[idx], responsePlans: [...currentPlans, link.title] };
+                                        } else {
+                                          newArr[idx] = { ...newArr[idx], responsePlans: currentPlans.filter(p => p !== link.title) };
+                                        }
+                                        setComplaints(newArr);
+                                      }}
+                                    />
+                                    <label htmlFor={`complaint-${idx}-plan-${link.id}`} className="text-sm cursor-pointer truncate" title={link.title}>
+                                      {link.title}
+                                    </label>
+                                  </div>
+                                )) : (
+                                  <p className="text-xs text-slate-400 col-span-2 text-center py-2">등록된 조치방안이 없습니다.</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 유사 사례 (Dynamic Rows) */}
+                            <div className="space-y-3 pt-4 border-t border-slate-200">
+                              <div className="flex items-center justify-between">
+                                <label className="text-sm font-bold text-slate-600 flex items-center gap-2">
+                                  <RotateCcw className="h-4 w-4" /> 유사 사례 (직접 입력)
+                                </label>
+                                <Button 
+                                  type="button" 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 text-xs gap-1"
+                                  onClick={() => {
+                                    const newArr = [...complaints];
+                                    newArr[idx] = { 
+                                      ...newArr[idx], 
+                                      similarCases: [...(newArr[idx].similarCases || []), { text: '', url: '' }] 
+                                    };
+                                    setComplaints(newArr);
+                                  }}
+                                >
+                                  <PlusCircle className="h-3 w-3" /> 행 추가
+                                </Button>
+                              </div>
+                              <div className="space-y-2">
+                                {(c.similarCases || []).length > 0 ? (c.similarCases || []).map((caseItem, caseIdx) => (
+                                  <div key={caseIdx} className="flex gap-2 items-center">
+                                    <span className="text-sm font-bold text-slate-400 shrink-0 w-5">{caseIdx + 1})</span>
+                                    <div className="flex-1 flex gap-2">
+                                      <Input 
+                                        placeholder="사례 내용 (예: 동백-죽전간 도로 소음 민원 사례)" 
+                                        value={caseItem.text}
+                                        className="flex-1 h-8 text-sm"
+                                        onChange={(e) => {
+                                          const newArr = [...complaints];
+                                          const cases = [...(newArr[idx].similarCases || [])];
+                                          cases[caseIdx] = { ...cases[caseIdx], text: e.target.value };
+                                          newArr[idx] = { ...newArr[idx], similarCases: cases };
+                                          setComplaints(newArr);
+                                        }}
+                                      />
+                                      <Input 
+                                        placeholder="참조 URL (https://...)" 
+                                        value={caseItem.url}
+                                        className="flex-1 h-8 text-sm"
+                                        onChange={(e) => {
+                                          const newArr = [...complaints];
+                                          const cases = [...(newArr[idx].similarCases || [])];
+                                          cases[caseIdx] = { ...cases[caseIdx], url: e.target.value };
+                                          newArr[idx] = { ...newArr[idx], similarCases: cases };
+                                          setComplaints(newArr);
+                                        }}
+                                      />
+                                    </div>
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-8 w-8 shrink-0 text-slate-300 hover:text-red-500 hover:bg-red-50"
+                                      onClick={() => {
+                                        const newArr = [...complaints];
+                                        const cases = (newArr[idx].similarCases || []).filter((_, i) => i !== caseIdx);
+                                        newArr[idx] = { ...newArr[idx], similarCases: cases };
+                                        setComplaints(newArr);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )) : (
+                                  <p className="text-xs text-slate-400 text-center py-2 bg-white rounded border border-dashed">추가된 유사 사례가 없습니다.</p>
+                                )}
+                              </div>
+                            </div>
+
                           </div>
                         )}
                       </div>
