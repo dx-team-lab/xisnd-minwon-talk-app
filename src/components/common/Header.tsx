@@ -56,7 +56,7 @@ export default function Header() {
     { name: '대응 방안/유사 사례', href: '/dashboard' },
   ];
 
-  const isSettingsActive = pathname.startsWith('/dashboard/users') || pathname.startsWith('/dashboard/settings');
+  const isSettingsActive = pathname.startsWith('/dashboard/users') || pathname.startsWith('/dashboard/settings') || pathname.startsWith('/admin/logs');
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
@@ -72,36 +72,39 @@ export default function Header() {
         {/* Center: Global Navigation Bar */}
         <nav className="hidden lg:flex items-center gap-10">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            let isActive = false;
+            
+            // '대응 방안/유사 사례' 메뉴(/dashboard)는 하위 경로와 겹치지 않도록 정확한 일치만 확인
+            if (item.href === '/dashboard') {
+              isActive = pathname === '/dashboard' || pathname === '/dashboard/';
+            } else {
+              // 나머지 하위 메뉴들은 자신의 경로(예: /dashboard/status)로 시작하는지 포함하여 확인
+              isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            }
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-sm font-medium transition-all relative py-2 ${
+                className={`text-sm transition-all relative py-2 border-b-2 ${
                   isActive 
-                    ? 'text-primary font-bold' 
-                    : 'text-slate-600 hover:text-primary'
+                    ? 'text-blue-600 border-blue-600 font-semibold' 
+                    : 'text-gray-600 border-transparent hover:text-gray-900'
                 }`}
               >
                 {item.name}
-                {isActive && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-full" />
-                )}
               </Link>
             );
           })}
 
           {isAdmin && (
             <DropdownMenu>
-              <DropdownMenuTrigger className={`text-sm font-medium transition-all relative py-2 outline-none ${
+              <DropdownMenuTrigger className={`text-sm transition-all relative py-2 outline-none border-b-2 ${
                 isSettingsActive 
-                  ? 'text-primary font-bold' 
-                  : 'text-slate-600 hover:text-primary'
+                  ? 'text-blue-600 border-blue-600 font-semibold' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
               }`}>
                 설정
-                {isSettingsActive && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-full" />
-                )}
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48 p-1">
                 <DropdownMenuItem asChild>

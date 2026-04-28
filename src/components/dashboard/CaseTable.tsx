@@ -96,25 +96,25 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">지역</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">단계</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-sm">유형</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 w-[120px] border-r text-xs">민원인</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 w-[150px] border-r text-xs">요구사항</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[80px] border-r text-xs">진행경과</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-xs">보상방식</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-right w-[120px] border-r text-xs">보상금액(원)</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 w-[120px] text-xs">상세내용</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-sm">민원인</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[150px] border-r text-sm">요구사항</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[80px] border-r text-sm">진행경과</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">보상방식</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-sm">보상금액(원)</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] text-sm">상세내용</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {slicedData.length > 0 ? (
                   slicedData.map((item, idx) => (
                     <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="border-r text-center align-top p-4">
+                      <TableCell className="border-r text-center align-top p-4 text-sm">
                         <CategoryBadge category="region">{item.region}</CategoryBadge>
                       </TableCell>
-                      <TableCell className="border-r text-center align-top p-4">
+                      <TableCell className="border-r text-center align-top p-4 text-sm">
                         <CategoryBadge category="phase">{item.phase}</CategoryBadge>
                       </TableCell>
-                      <TableCell className="border-r text-center align-top p-4">
+                      <TableCell className="border-r text-center align-top p-4 text-sm">
                         <div className="flex flex-wrap justify-center gap-1.5">
                           {Array.isArray(item.type) ? item.type.map((t: string) => (
                             <CategoryBadge key={t} category="type">{t}</CategoryBadge>
@@ -123,11 +123,11 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="align-top p-4 text-xs font-bold text-slate-700 border-r">
+                      <TableCell className="align-top p-4 text-sm font-bold text-slate-700 border-r text-left">
                         {item.complainant}
                       </TableCell>
-                      <TableCell className="align-top p-4 border-r">
-                        <div className="flex flex-wrap gap-1.5">
+                      <TableCell className="align-top p-4 border-r text-center text-sm">
+                        <div className="flex flex-wrap justify-center gap-1.5">
                           {Array.isArray(item.requestContent) ? item.requestContent.map((rt: string) => (
                             <Badge key={rt} variant="outline" className="bg-rose-50 text-rose-600 border-none rounded-full text-sm font-bold whitespace-nowrap px-3 py-1">
                               {rt}
@@ -139,7 +139,7 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="align-top p-4 text-center border-r">
+                      <TableCell className="align-top p-4 text-center border-r text-sm">
                         <Badge 
                           variant="outline" 
                           className={cn(
@@ -152,23 +152,23 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                           {item.progress}
                         </Badge>
                       </TableCell>
-                      <TableCell className="align-top p-4 border-r text-center">
+                      <TableCell className="align-top p-4 border-r text-center text-sm">
                         <Badge variant="outline" className="bg-teal-50 text-teal-600 border-none rounded-full text-sm font-bold whitespace-nowrap px-3 py-1">
                           {item.compensationMethod}
                         </Badge>
                       </TableCell>
-                      <TableCell className="align-top p-4 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap text-xs border-r">
+                      <TableCell className="align-top p-4 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap text-sm border-r">
                         {item.compensationAmount?.toLocaleString() || '-'}
                       </TableCell>
-                      <TableCell className="align-top p-4 text-xs text-slate-600 leading-relaxed max-w-[120px]">
+                      <TableCell className="align-top p-4 text-sm text-slate-600 leading-relaxed max-w-[120px] text-center">
                         {item.details?.startsWith('http') ? (
                           <a 
                             href={item.details} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="text-blue-600 hover:underline flex items-center gap-1"
+                            className="text-blue-600 hover:underline flex items-center justify-center gap-0.5 shrink-0 text-sm font-semibold mt-0.5"
                           >
-                            문서 보기 <ExternalLink className="h-3 w-3" />
+                            [문서 보기] <ExternalLink className="h-3 w-3" />
                           </a>
                         ) : (
                           item.details

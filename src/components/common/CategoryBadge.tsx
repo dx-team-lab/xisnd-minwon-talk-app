@@ -22,8 +22,8 @@ export function CategoryBadge({ category = 'default', children, className, ...pr
     // User requested ALL phases use the red/orange color the same as '준공'
     colorClass = 'bg-orange-50 text-orange-700 border-none';
   } else if (category === 'type') {
-    // For type, we map using the existing constants if possible
-    colorClass = TYPE_BADGE_COLORS[text] || 'bg-blue-50 text-blue-700 border-none';
+    // User requested ALL types to use the identical blue color
+    colorClass = 'bg-blue-50 text-blue-600 border-none';
   }
 
   // Check if colorClass explicitly contains border definition, if not, assume border-none.

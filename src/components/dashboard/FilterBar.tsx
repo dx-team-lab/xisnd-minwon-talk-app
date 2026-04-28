@@ -81,7 +81,9 @@ export default function FilterBar({
                   </SelectTrigger>
                   <SelectContent>
                     {config.options.map(opt => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      <SelectItem key={opt} value={opt}>
+                        {opt === '착공전' ? '착공전(철거)' : opt}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -103,7 +105,7 @@ export default function FilterBar({
             {Object.entries(filters).flatMap(([key, values]) =>
               values.map(val => (
                 <Badge key={`${key}-${val}`} variant="secondary" className="gap-1.5 py-1 px-3 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 rounded-full">
-                  {FILTER_OPTIONS[key as keyof typeof FILTER_OPTIONS].label}: {val}
+                  {FILTER_OPTIONS[key as keyof typeof FILTER_OPTIONS].label}: {val === '착공전' ? '착공전(철거)' : val}
                   <button onClick={() => onRemoveFilter(key, val)}>
                     <X className="h-3 w-3" />
                   </button>

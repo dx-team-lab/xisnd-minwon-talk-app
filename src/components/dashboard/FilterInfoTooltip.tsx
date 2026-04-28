@@ -119,7 +119,7 @@ export default function FilterInfoTooltip({ type }: FilterInfoTooltipProps) {
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="w-[360px] p-0 bg-white border-slate-200 shadow-xl overflow-hidden rounded-lg">
-        <div className="p-1 px-2 bg-slate-900 text-white text-[10px] font-bold tracking-wider uppercase">
+        <div className="p-2 px-3 bg-slate-900 text-white text-sm font-bold tracking-wider uppercase">
           {type === 'region' ? '지역/지구 안내' : type === 'phase' ? '단계 안내' : '유형 안내'}
         </div>
         <div className="p-2">

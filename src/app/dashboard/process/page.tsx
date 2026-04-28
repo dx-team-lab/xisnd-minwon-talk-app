@@ -44,10 +44,10 @@ export default function ResponseProcedurePage() {
   return (
     <div className="min-h-screen bg-[#F0F4FF]">
       <Header />
-      <main className="container mx-auto px-4 py-8 md:py-12">
-        <div className="mb-8 text-center md:text-left">
-          <h1 className="text-3xl font-headline font-bold text-slate-900">민원 대응 절차</h1>
-          <p className="text-slate-500 mt-2">표준화된 민원 대응 프로세스를 확인하세요.</p>
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        <div>
+          <h1 className="text-2xl font-headline font-bold text-slate-900">민원 대응 절차</h1>
+          <p className="text-slate-500 text-sm mt-1.5">표준화된 민원 대응 프로세스를 확인하세요.</p>
         </div>
 
         <Card className="rounded-2xl border-none shadow-xl overflow-hidden bg-white">

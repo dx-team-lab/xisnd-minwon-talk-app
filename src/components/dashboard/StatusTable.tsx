@@ -241,7 +241,7 @@ const ComplaintDetailsModal = ({
   );
 };
 
-const ImageModal = ({ siteName, images, onClose }: { siteName: string, images: SiteImage[], onClose: () => void }) => {
+const ImageModal = ({ siteName, images, onClose, onImageClick }: { siteName: string, images: SiteImage[], onClose: () => void, onImageClick?: (e: React.MouseEvent) => void }) => {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -276,11 +276,15 @@ const ImageModal = ({ siteName, images, onClose }: { siteName: string, images: S
               key={img.id || idx} 
               src={img.base64} 
               alt={`${siteName} 이미지 ${idx + 1}`} 
-              className="w-full h-auto max-w-full rounded border shadow-sm object-contain cursor-zoom-in hover:opacity-95 transition-opacity" 
-              onClick={() => {
-                const w = window.open('', '_blank');
-                if (w) {
-                  w.document.write(`<html><head><title>${siteName} 이미지</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;background:#000;min-height:100vh;"><img src="${img.base64}" style="max-width:100%;max-height:100%;" /></body></html>`);
+              className="w-full h-auto max-w-full rounded border shadow-sm object-contain cursor-pointer hover:opacity-95 transition-opacity" 
+              onClick={(e) => {
+                if (onImageClick) {
+                  onImageClick(e);
+                } else {
+                  const w = window.open('', '_blank');
+                  if (w) {
+                    w.document.write(`<html><head><title>${siteName} 이미지</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;background:#000;min-height:100vh;"><img src="${img.base64}" style="max-width:100%;max-height:100%;" /></body></html>`);
+                  }
                 }
               }}
             />
@@ -401,7 +405,7 @@ const ComplaintModal = ({
 };
 
 export default function StatusTable({ data, isLoading }: StatusTableProps) {
-  const [modalData, setModalData] = useState<{siteName: string, images: SiteImage[]} | null>(null);
+  const [modalData, setModalData] = useState<{site: Site, images: SiteImage[]} | null>(null);
   const [complaintModalData, setComplaintModalData] = useState<{
     siteName: string;
     completedCount: number;
@@ -427,18 +431,18 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
     }
   }, [linksQuery]);
 
-  const handleRowClick = async (siteId: string, siteName: string) => {
+  const handleRowClick = async (site: Site) => {
     if (isFetchingImages || !db) return;
     setIsFetchingImages(true);
     try {
-      const q = query(collection(db, `sites/${siteId}/siteImages`), orderBy('order', 'asc'));
+      const q = query(collection(db, `sites/${site.id}/siteImages`), orderBy('order', 'asc'));
       const snap = await getDocs(q);
       const fetchedImages = snap.docs.map(d => ({ id: d.id, ...d.data() } as SiteImage));
 
       if (fetchedImages.length === 0) {
         toast({ title: '이미지 없음', description: '등록된 이미지가 없습니다. [설정] > [현장 관리]에서 이미지를 추가해 주세요.' });
       } else {
-        setModalData({ siteName, images: fetchedImages });
+        setModalData({ site, images: fetchedImages });
       }
     } catch (e) {
       console.error(e);
@@ -448,8 +452,8 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
     }
   };
 
-  const handleComplaintCellClick = async (site: Site, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleComplaintCellClick = async (site: Site, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (isFetchingComplaints || !db) return;
     setIsFetchingComplaints(true);
     try {
@@ -497,7 +501,7 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
                   <React.Fragment key={site.id}>
                     <TableRow 
                       className="hover:bg-slate-50/50 transition-colors cursor-pointer"
-                      onClick={() => handleRowClick(site.id, site.siteName)}
+                      onClick={() => handleRowClick(site)}
                     >
                       <TableCell className="border-r text-center align-middle p-4 font-bold text-slate-700 text-sm">
                         <div className="flex items-center justify-center gap-2">
@@ -558,9 +562,13 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
       </CardContent>
       {modalData && (
         <ImageModal
-          siteName={modalData.siteName}
+          siteName={modalData.site.siteName}
           images={modalData.images}
           onClose={() => setModalData(null)}
+          onImageClick={(e) => {
+            setModalData(null);
+            handleComplaintCellClick(modalData.site, e);
+          }}
         />
       )}
       {complaintModalData && (

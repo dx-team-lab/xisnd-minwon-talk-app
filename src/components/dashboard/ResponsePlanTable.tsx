@@ -129,21 +129,21 @@ export default function ResponsePlanTable({ data, isLoading, isFilterActive, act
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[100px] text-sm">지역</TableHead>
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[100px] text-sm">단계</TableHead>
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[120px] text-sm">유형</TableHead>
-                <TableHead className="h-12 font-bold border-r text-slate-700 text-sm w-[250px]">민원 상세</TableHead>
-                <TableHead className="h-12 font-bold text-slate-700 text-sm min-w-[300px]">민원 대응 지식</TableHead>
+                <TableHead className="h-12 font-bold border-r text-slate-700 text-center text-sm w-[250px]">민원 상세</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 text-center text-sm min-w-[300px]">민원 대응 지식</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayData.length > 0 ? (
                 displayData.map((row, idx) => (
                   <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
-                    <TableCell className="border-r text-center align-top p-4">
+                    <TableCell className="border-r text-center align-top p-4 text-sm">
                       <CategoryBadge category="region">{row.region}</CategoryBadge>
                     </TableCell>
-                    <TableCell className="border-r text-center align-top p-4">
+                    <TableCell className="border-r text-center align-top p-4 text-sm">
                       <CategoryBadge category="phase">{row.phase}</CategoryBadge>
                     </TableCell>
-                    <TableCell className="border-r text-center align-top p-4">
+                    <TableCell className="border-r text-center align-top p-4 text-sm">
                       <div className="flex flex-wrap justify-center gap-1.5">
                         {Array.isArray(row.type) ? row.type.map((t: string) => (
                           <CategoryBadge key={t} category="type">{t}</CategoryBadge>
@@ -168,7 +168,7 @@ export default function ResponsePlanTable({ data, isLoading, isFilterActive, act
                                   href={linkUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline flex items-center gap-0.5 shrink-0 text-xs font-semibold mt-0.5"
+                                  className="text-blue-600 hover:underline flex items-center gap-0.5 shrink-0 text-sm font-semibold mt-0.5"
                                 >
                                   [문서 보기] <ExternalLink className="h-3 w-3" />
                                 </a>
