@@ -12,14 +12,21 @@ import { Loader2, Upload, FileText, Globe, Plus, Trash2, ExternalLink, FileDown,
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
+type ReferenceFile = {
+  name: string;
+  url: string;
+};
+
 type DocumentCategory = {
   id: string;
   title: string;
   when: string;
   who: string;
   why: string;
-  formUrl?: string; // 양식 파일
-  exampleUrl?: string; // 예시 파일
+  forms?: ReferenceFile[]; // 다중 양식 파일
+  examples?: ReferenceFile[]; // 다중 예시 파일
+  formUrl?: string; // 레거시 지원
+  exampleUrl?: string; // 레거시 지원
 };
 
 type SiteReference = {
@@ -59,22 +66,28 @@ export default function ReferenceManagementSection() {
   const categories = references?.documents || DEFAULT_CATEGORIES;
   const sites = references?.sites || [];
 
-  const handleFileUpload = async (categoryId: string, type: 'form' | 'example', file: File) => {
+  const handleFileUpload = async (categoryId: string, type: 'forms' | 'examples', files: FileList) => {
     if (!storage || !db) return;
     
     setUploadingDocId(categoryId);
-    setUploadType(type);
+    setUploadType(type === 'forms' ? 'form' : 'example');
     
     try {
-      const storageRef = ref(storage, `references/${categoryId}/${type}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(storageRef);
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const storageRef = ref(storage, `references/${categoryId}/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        return { name: file.name, url };
+      });
+
+      const newFiles = await Promise.all(uploadPromises);
       
       const updatedCategories = categories.map((cat: DocumentCategory) => {
         if (cat.id === categoryId) {
+          const existingFiles = cat[type] || [];
           return {
             ...cat,
-            [type === 'form' ? 'formUrl' : 'exampleUrl']: downloadUrl
+            [type]: [...existingFiles, ...newFiles]
           };
         }
         return cat;
@@ -85,13 +98,40 @@ export default function ReferenceManagementSection() {
         updatedAt: serverTimestamp()
       }, { merge: true });
       
-      toast({ title: '파일 업로드 완료', description: `${type === 'form' ? '양식' : '예시'} 파일이 저장되었습니다.` });
+      toast({ title: '파일 업로드 완료', description: `${newFiles.length}개의 파일이 저장되었습니다.` });
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({ title: '업로드 실패', description: error.message, variant: 'destructive' });
     } finally {
       setUploadingDocId(null);
       setUploadType(null);
+    }
+  };
+
+  const handleDeleteFile = async (categoryId: string, type: 'forms' | 'examples', fileIndex: number) => {
+    if (!db) return;
+
+    try {
+      const updatedCategories = categories.map((cat: DocumentCategory) => {
+        if (cat.id === categoryId) {
+          const files = [...(cat[type] || [])];
+          files.splice(fileIndex, 1);
+          return {
+            ...cat,
+            [type]: files
+          };
+        }
+        return cat;
+      });
+
+      await setDoc(doc(db, 'settings', 'references'), {
+        documents: updatedCategories,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      toast({ title: '파일 삭제 완료' });
+    } catch (error: any) {
+      toast({ title: '삭제 실패', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -166,12 +206,12 @@ export default function ReferenceManagementSection() {
                   </p>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div className="space-y-3">
                     <Label className="text-xs font-bold text-slate-500">양식 파일</Label>
-                    <div className="flex items-center gap-2">
+                    <div className="space-y-2">
                       <Button 
-                        variant={cat.formUrl ? "outline" : "secondary"}
+                        variant="secondary"
                         size="sm"
                         className="w-full h-10 rounded-xl relative overflow-hidden"
                         asChild
@@ -181,33 +221,58 @@ export default function ReferenceManagementSection() {
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              {cat.formUrl ? '교체' : '업로드'}
+                              <Plus className="h-4 w-4 mr-2" />
+                              파일 추가
                             </>
                           )}
                           <input 
                             type="file" 
+                            multiple
                             className="hidden" 
                             onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleFileUpload(cat.id, 'form', file);
+                              const files = e.target.files;
+                              if (files && files.length > 0) handleFileUpload(cat.id, 'forms', files);
                             }}
                           />
                         </label>
                       </Button>
-                      {cat.formUrl && (
-                        <a href={cat.formUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-primary hover:bg-primary/5 rounded-full transition-colors">
-                          <FileDown className="h-4 w-4" />
-                        </a>
-                      )}
+                      
+                      {/* Form Files List */}
+                      <div className="space-y-1">
+                        {cat.forms?.map((file, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 pl-3 bg-slate-50 rounded-lg group">
+                            <span className="text-xs text-slate-600 truncate max-w-[150px]">{file.name}</span>
+                            <div className="flex items-center gap-1">
+                              <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-1 text-slate-400 hover:text-primary">
+                                <FileDown className="h-3.5 w-3.5" />
+                              </a>
+                              <button 
+                                onClick={() => handleDeleteFile(cat.id, 'forms', idx)}
+                                className="p-1 text-slate-400 hover:text-red-500"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Legacy Support */}
+                        {cat.formUrl && !cat.forms?.length && (
+                          <div className="flex items-center justify-between p-2 pl-3 bg-amber-50 rounded-lg">
+                            <span className="text-xs text-amber-700 truncate">기존 파일 (교체 필요)</span>
+                            <a href={cat.formUrl} target="_blank" rel="noopener noreferrer" className="p-1 text-amber-700">
+                              <FileDown className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label className="text-xs font-bold text-slate-500">예시 파일</Label>
-                    <div className="flex items-center gap-2">
+                    <div className="space-y-2">
                       <Button 
-                        variant={cat.exampleUrl ? "outline" : "secondary"}
+                        variant="secondary"
                         size="sm"
                         className="w-full h-10 rounded-xl relative overflow-hidden"
                         asChild
@@ -217,25 +282,50 @@ export default function ReferenceManagementSection() {
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              {cat.exampleUrl ? '교체' : '업로드'}
+                              <Plus className="h-4 w-4 mr-2" />
+                              파일 추가
                             </>
                           )}
                           <input 
                             type="file" 
+                            multiple
                             className="hidden" 
                             onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleFileUpload(cat.id, 'example', file);
+                              const files = e.target.files;
+                              if (files && files.length > 0) handleFileUpload(cat.id, 'examples', files);
                             }}
                           />
                         </label>
                       </Button>
-                      {cat.exampleUrl && (
-                        <a href={cat.exampleUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-primary hover:bg-primary/5 rounded-full transition-colors">
-                          <Eye className="h-4 w-4" />
-                        </a>
-                      )}
+
+                      {/* Example Files List */}
+                      <div className="space-y-1">
+                        {cat.examples?.map((file, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 pl-3 bg-slate-50 rounded-lg group">
+                            <span className="text-xs text-slate-600 truncate max-w-[150px]">{file.name}</span>
+                            <div className="flex items-center gap-1">
+                              <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-1 text-slate-400 hover:text-primary">
+                                <Eye className="h-3.5 w-3.5" />
+                              </a>
+                              <button 
+                                onClick={() => handleDeleteFile(cat.id, 'examples', idx)}
+                                className="p-1 text-slate-400 hover:text-red-500"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Legacy Support */}
+                        {cat.exampleUrl && !cat.examples?.length && (
+                          <div className="flex items-center justify-between p-2 pl-3 bg-amber-50 rounded-lg">
+                            <span className="text-xs text-amber-700 truncate">기존 일지 (교체 필요)</span>
+                            <a href={cat.exampleUrl} target="_blank" rel="noopener noreferrer" className="p-1 text-amber-700">
+                              <Eye className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

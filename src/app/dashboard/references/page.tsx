@@ -7,8 +7,22 @@ import Header from '@/components/common/Header';
 import InquiryModal from '@/components/references/InquiryModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, FileDown, Eye, ExternalLink, Globe, FileText, Download } from 'lucide-react';
+import { Loader2, FileDown, Eye, ExternalLink, Globe, FileText, Download, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { saveAs } from 'file-saver';
+
+type ReferenceFile = {
+  name: string;
+  url: string;
+};
 
 type DocumentCategory = {
   id: string;
@@ -16,8 +30,10 @@ type DocumentCategory = {
   when: string;
   who: string;
   why: string;
-  formUrl?: string;
-  exampleUrl?: string;
+  forms?: ReferenceFile[];
+  examples?: ReferenceFile[];
+  formUrl?: string; // 레거시 지원
+  exampleUrl?: string; // 레거시 지원
 };
 
 type SiteReference = {
@@ -103,46 +119,19 @@ export default function ReferencesPage() {
                   </div>
 
                   <div className="flex gap-3 pt-4 border-t border-slate-50">
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "flex-1 h-12 rounded-2xl font-bold border-2 transition-all",
-                        cat.formUrl
-                          ? "border-primary/10 text-primary hover:bg-primary hover:text-white hover:border-primary"
-                          : "border-slate-100 text-slate-300 cursor-not-allowed"
-                      )}
-                      asChild={!!cat.formUrl}
-                      disabled={!cat.formUrl}
-                    >
-                      {cat.formUrl ? (
-                        <a href={cat.formUrl} target="_blank" rel="noopener noreferrer">
-                          <Download className="h-4 w-4 mr-2" />
-                          다운로드
-                        </a>
-                      ) : (
-                        <span><Download className="h-4 w-4 mr-2" />다운로드</span>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "flex-1 h-12 rounded-2xl font-bold border-2 transition-all",
-                        cat.exampleUrl
-                          ? "border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
-                          : "border-slate-100 text-slate-300 cursor-not-allowed"
-                      )}
-                      asChild={!!cat.exampleUrl}
-                      disabled={!cat.exampleUrl}
-                    >
-                      {cat.exampleUrl ? (
-                        <a href={cat.exampleUrl} target="_blank" rel="noopener noreferrer">
-                          <Eye className="h-4 w-4 mr-2" />
-                          작성 예시
-                        </a>
-                      ) : (
-                        <span><Eye className="h-4 w-4 mr-2" />작성 예시</span>
-                      )}
-                    </Button>
+                    <ReferenceButton 
+                      title="다운로드" 
+                      icon={<Download className="h-4 w-4 mr-2" />} 
+                      files={cat.forms} 
+                      legacyUrl={cat.formUrl} 
+                      primary
+                    />
+                    <ReferenceButton 
+                      title="작성 예시" 
+                      icon={<Eye className="h-4 w-4 mr-2" />} 
+                      files={cat.examples} 
+                      legacyUrl={cat.exampleUrl} 
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -208,5 +197,128 @@ export default function ReferencesPage() {
         onClose={() => setIsInquiryModalOpen(false)} 
       />
     </div>
+  );
+}
+
+function ReferenceButton({ 
+  title, 
+  icon, 
+  files, 
+  legacyUrl, 
+  primary = false 
+}: { 
+  title: string; 
+  icon: React.ReactNode; 
+  files?: ReferenceFile[]; 
+  legacyUrl?: string;
+  primary?: boolean;
+}) {
+  const { toast } = useToast();
+  
+  // 실제 사용 가능한 파일 목록 (배열 우선, 없으면 레거시 URL)
+  const availableFiles = files && files.length > 0 
+    ? files 
+    : (legacyUrl ? [{ name: `${title}.pdf`, url: legacyUrl }] : []);
+
+  const handleDownloadAll = async () => {
+    for (let i = 0; i < availableFiles.length; i++) {
+      const file = availableFiles[i];
+      // 브라우저 팝업 차단 방지를 위해 약간의 딜레이
+      await new Promise(resolve => setTimeout(resolve, 200));
+      saveAs(file.url, file.name);
+    }
+    toast({
+      title: "전체 다운로드 시작",
+      description: `${availableFiles.length}개의 파일 다운로드를 시작합니다.`
+    });
+  };
+
+  const hasFiles = availableFiles.length > 0;
+
+  const handleClick = () => {
+    if (!hasFiles) {
+      toast({
+        title: "파일 없음",
+        description: `등록된 ${title} 파일이 없습니다.`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (!hasFiles) {
+    return (
+      <Button
+        variant="outline"
+        onClick={handleClick}
+        className="flex-1 h-12 rounded-2xl font-bold border-2 border-slate-100 text-slate-300 cursor-not-allowed"
+      >
+        {icon}{title}
+      </Button>
+    );
+  }
+
+  // 파일이 1개면 바로 이동
+  if (availableFiles.length === 1) {
+    return (
+      <Button
+        variant="outline"
+        asChild
+        className={cn(
+          "flex-1 h-12 rounded-2xl font-bold border-2 transition-all",
+          primary 
+            ? "border-primary/10 text-primary hover:bg-primary hover:text-white hover:border-primary"
+            : "border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+        )}
+      >
+        <a href={availableFiles[0].url} target="_blank" rel="noopener noreferrer">
+          {icon}{title}
+        </a>
+      </Button>
+    )
+  }
+
+  // 파일이 여러 개면 드롭다운
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "flex-1 h-12 rounded-2xl font-bold border-2 transition-all",
+            primary 
+              ? "border-primary/10 text-primary hover:bg-primary hover:text-white hover:border-primary"
+              : "border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+          )}
+        >
+          {icon}{title}
+          <ChevronDown className="h-3 w-3 ml-2 opacity-50" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[200px] rounded-2xl p-2 shadow-xl border-slate-100">
+        <div className="px-2 py-1.5 text-xs font-bold text-slate-400 border-b border-slate-50 mb-1">파일 선택 ({availableFiles.length})</div>
+        
+        {availableFiles.length > 1 && (
+          <>
+            <DropdownMenuItem 
+              onClick={handleDownloadAll}
+              className="rounded-xl cursor-pointer focus:bg-primary focus:text-white font-bold text-primary"
+            >
+              <Download className="h-3.5 w-3.5 mr-2" />
+              전체 파일 다운로드
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-1 bg-slate-50" />
+          </>
+        )}
+
+        {availableFiles.map((file, idx) => (
+          <DropdownMenuItem key={idx} asChild className="rounded-xl cursor-pointer focus:bg-primary/5 focus:text-primary">
+            <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center w-full py-2.5">
+              <FileText className="h-3.5 w-3.5 mr-2 opacity-50" />
+              <span className="truncate flex-1">{file.name}</span>
+            </a>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
