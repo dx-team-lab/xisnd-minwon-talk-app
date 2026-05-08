@@ -16,7 +16,7 @@ export default function Header() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  
+
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null;
     return doc(db, 'users', user.uid);
@@ -28,15 +28,15 @@ export default function Header() {
     if (!db || !user) return null;
     return collection(db, 'roles_admin');
   }, [db, user]);
-  
+
   const managersQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return collection(db, 'roles_manager');
   }, [db, user]);
-  
+
   const { data: admins } = useCollection(adminsQuery);
   const { data: managers } = useCollection(managersQuery);
-  
+
   const isAdmin = !!(user && admins && admins.some(a => a.id === user.uid));
   const isManager = !!(user && managers && managers.some(m => m.id === user.uid));
   const hasSettingsAccess = isAdmin || isManager;
@@ -54,6 +54,7 @@ export default function Header() {
     { name: '민원 현황', href: '/dashboard/status' },
     { name: '민원 대응 절차', href: '/dashboard/process' },
     { name: '대응 방안/유사 사례', href: '/dashboard/guides' },
+    { name: '참고자료', href: '/dashboard/references' },
   ];
 
   const isSettingsActive = pathname.startsWith('/dashboard/users') || pathname.startsWith('/dashboard/settings') || pathname.startsWith('/admin/logs');
@@ -64,11 +65,11 @@ export default function Header() {
         {/* Left: Logo */}
         <div className="flex items-center">
           <Link href="/dashboard" className="flex items-center gap-3 mr-10 hover:opacity-80 transition-opacity">
-            <img 
-              src="/logo.png" 
-              alt="MinwonTalk Logo" 
-              width="32" 
-              height="32" 
+            <img
+              src="../logo.png"
+              alt="MinwonTalk Logo"
+              width="32"
+              height="32"
               className="h-8 w-auto object-contain"
             />
             <span className="text-xl font-extrabold tracking-tight text-slate-800">
@@ -81,7 +82,7 @@ export default function Header() {
         <nav className="hidden lg:flex items-center gap-10">
           {navItems.map((item) => {
             let isActive = false;
-            
+
             // '홈' 메뉴(/dashboard)는 하위 경로와 겹치지 않도록 정확한 일치만 확인
             if (item.href === '/dashboard') {
               isActive = pathname === '/dashboard' || pathname === '/dashboard/';
@@ -94,11 +95,10 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-sm transition-all relative py-2 border-b-2 ${
-                  isActive 
-                    ? 'text-blue-600 border-blue-600 font-semibold' 
-                    : 'text-gray-600 border-transparent hover:text-gray-900'
-                }`}
+                className={`text-sm transition-all relative py-2 border-b-2 ${isActive
+                  ? 'text-blue-600 border-blue-600 font-semibold'
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+                  }`}
               >
                 {item.name}
               </Link>
@@ -107,11 +107,10 @@ export default function Header() {
 
           {isAdmin && (
             <DropdownMenu>
-              <DropdownMenuTrigger className={`text-sm transition-all relative py-2 outline-none border-b-2 ${
-                isSettingsActive 
-                  ? 'text-blue-600 border-blue-600 font-semibold' 
-                  : 'text-gray-600 border-transparent hover:text-gray-900'
-              }`}>
+              <DropdownMenuTrigger className={`text-sm transition-all relative py-2 outline-none border-b-2 ${isSettingsActive
+                ? 'text-blue-600 border-blue-600 font-semibold'
+                : 'text-gray-600 border-transparent hover:text-gray-900'
+                }`}>
                 설정
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48 p-1">
@@ -155,7 +154,7 @@ export default function Header() {
                       {user?.email}
                     </span>
                   </div>
-                  
+
                   {isAdmin && (
                     <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-primary/20">
                       관리자
@@ -169,9 +168,9 @@ export default function Header() {
                 </div>
 
                 <div className="flex items-center gap-2 border-l pl-4 h-8">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={handleLogout}
                     className="h-8 w-8 rounded-full text-red-500 hover:text-red-100 hover:bg-red-50 transition-colors"
                     title="로그아웃"

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -14,6 +13,8 @@ import ActionPlanLinkSection from '@/components/settings/ActionPlanLinkSection';
 import ResponseProcedureSection from '@/components/settings/ResponseProcedureSection';
 import SiteManagementSection from '@/components/settings/SiteManagementSection';
 import MainImageSettingsSection from '@/components/settings/MainImageSettingsSection';
+import ReferenceManagementSection from '@/components/settings/ReferenceManagementSection';
+import InquiryManagementSection from '@/components/settings/InquiryManagementSection';
 
 export default function SystemSettingsPage() {
   const { user, isUserLoading } = useUser();
@@ -29,7 +30,7 @@ export default function SystemSettingsPage() {
     if (!db || !user) return null;
     return collection(db, 'roles_manager');
   }, [db, user]);
-  
+
   const { data: admins, isLoading: isAdminLoading } = useCollection(adminsQuery);
   const { data: managers, isLoading: isManagerLoading } = useCollection(managersQuery);
 
@@ -81,6 +82,12 @@ export default function SystemSettingsPage() {
             <TabsTrigger value="procedure" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
               민원 대응 절차 관리
             </TabsTrigger>
+            <TabsTrigger value="references" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+              참고자료 관리
+            </TabsTrigger>
+            <TabsTrigger value="inquiries" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+              문의/요청 관리
+            </TabsTrigger>
             <TabsTrigger value="response" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
               대응 방안
             </TabsTrigger>
@@ -101,6 +108,12 @@ export default function SystemSettingsPage() {
             </TabsContent>
             <TabsContent value="procedure">
               <ResponseProcedureSection />
+            </TabsContent>
+            <TabsContent value="references">
+              <ReferenceManagementSection />
+            </TabsContent>
+            <TabsContent value="inquiries">
+              <InquiryManagementSection />
             </TabsContent>
             <TabsContent value="response">
               <ResponseGuideSection />
