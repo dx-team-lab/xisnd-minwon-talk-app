@@ -71,6 +71,7 @@ export default function Header() {
               width={32} 
               height={32} 
               className="h-8 w-auto object-contain"
+              unoptimized={true}
             />
             <span className="text-xl font-extrabold tracking-tight text-slate-800">
               민원 대응 지식 플랫폼
