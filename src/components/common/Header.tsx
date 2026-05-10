@@ -66,7 +66,7 @@ export default function Header() {
         <div className="flex items-center">
           <Link href="/dashboard" className="flex items-center gap-3 mr-10 hover:opacity-80 transition-opacity">
             <img
-              src="../logo.png"
+              src="/logo.png"
               alt="MinwonTalk Logo"
               width="32"
               height="32"
