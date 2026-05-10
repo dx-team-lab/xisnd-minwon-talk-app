@@ -4,10 +4,10 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, Settings, Loader2, Users, SlidersHorizontal, ChevronDown, History } from 'lucide-react';
+import { LogOut, Settings, Loader2, Users, SlidersHorizontal, ChevronDown, History, Bell } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 
 export default function Header() {
@@ -41,6 +41,14 @@ export default function Header() {
   const isManager = !!(user && managers && managers.some(m => m.id === user.uid));
   const hasSettingsAccess = isAdmin || isManager;
 
+  const pendingInquiriesQuery = useMemoFirebase(() => {
+    if (!db || !hasSettingsAccess) return null;
+    return query(collection(db, 'inquiries'), where('status', '==', 'pending'));
+  }, [db, hasSettingsAccess]);
+
+  const { data: pendingInquiries } = useCollection(pendingInquiriesQuery);
+  const pendingCount = pendingInquiries?.length || 0;
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -66,7 +74,7 @@ export default function Header() {
         <div className="flex items-center">
           <Link href="/dashboard" className="flex items-center gap-3 mr-10 hover:opacity-80 transition-opacity">
             <img
-              src="/logo.png"
+              src="../logo.png"
               alt="MinwonTalk Logo"
               width="32"
               height="32"
@@ -141,6 +149,21 @@ export default function Header() {
         {/* Right: User Info & Logout */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-3">
+            {hasSettingsAccess && (
+              <Link
+                href="/dashboard/settings/system?tab=inquiries"
+                className="relative p-2 text-slate-400 hover:text-primary transition-colors group"
+                title="새로운 문의/요청"
+              >
+                <Bell className="h-5 w-5" />
+                {pendingCount > 0 && (
+                  <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {isUserLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : user ? (

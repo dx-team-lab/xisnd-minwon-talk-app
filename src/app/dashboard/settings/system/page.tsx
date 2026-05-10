@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import Header from '@/components/common/Header';
@@ -20,6 +20,10 @@ export default function SystemSettingsPage() {
   const { user, isUserLoading } = useUser();
   const db = useFirestore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || 'site');
+
 
   const adminsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -49,6 +53,12 @@ export default function SystemSettingsPage() {
     }
   }, [user, isUserLoading, admins, managers, isAdminLoading, isManagerLoading, router]);
 
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   if (isUserLoading || isAdminLoading || isManagerLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F0F4FF]">
@@ -71,7 +81,7 @@ export default function SystemSettingsPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="site" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-white border w-full md:w-auto grid grid-cols-2 lg:flex rounded-xl p-1 h-auto">
             <TabsTrigger value="site" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
               현장 관리

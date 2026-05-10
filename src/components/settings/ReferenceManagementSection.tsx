@@ -25,8 +25,6 @@ type DocumentCategory = {
   why: string;
   forms?: ReferenceFile[]; // 다중 양식 파일
   examples?: ReferenceFile[]; // 다중 예시 파일
-  formUrl?: string; // 레거시 지원
-  exampleUrl?: string; // 레거시 지원
 };
 
 type SiteReference = {
@@ -239,29 +237,26 @@ export default function ReferenceManagementSection() {
                       
                       {/* Form Files List */}
                       <div className="space-y-1">
-                        {cat.forms?.map((file, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-2 pl-3 bg-slate-50 rounded-lg group">
-                            <span className="text-xs text-slate-600 truncate max-w-[150px]">{file.name}</span>
-                            <div className="flex items-center gap-1">
-                              <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-1 text-slate-400 hover:text-primary">
-                                <FileDown className="h-3.5 w-3.5" />
-                              </a>
-                              <button 
-                                onClick={() => handleDeleteFile(cat.id, 'forms', idx)}
-                                className="p-1 text-slate-400 hover:text-red-500"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                        {cat.forms && cat.forms.length > 0 ? (
+                          cat.forms.map((file, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2 pl-3 bg-slate-50 rounded-lg group">
+                              <span className="text-xs text-slate-600 truncate max-w-[150px]">{file.name}</span>
+                              <div className="flex items-center gap-1">
+                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-1 text-slate-400 hover:text-primary">
+                                  <FileDown className="h-3.5 w-3.5" />
+                                </a>
+                                <button 
+                                  onClick={() => handleDeleteFile(cat.id, 'forms', idx)}
+                                  className="p-1 text-slate-400 hover:text-red-500"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                        {/* Legacy Support */}
-                        {cat.formUrl && !cat.forms?.length && (
-                          <div className="flex items-center justify-between p-2 pl-3 bg-amber-50 rounded-lg">
-                            <span className="text-xs text-amber-700 truncate">기존 파일 (교체 필요)</span>
-                            <a href={cat.formUrl} target="_blank" rel="noopener noreferrer" className="p-1 text-amber-700">
-                              <FileDown className="h-3.5 w-3.5" />
-                            </a>
+                          ))
+                        ) : (
+                          <div className="text-[10px] text-slate-400 text-center py-2 border border-dashed rounded-lg bg-slate-50/50">
+                            등록된 파일이 없습니다.
                           </div>
                         )}
                       </div>
@@ -300,29 +295,26 @@ export default function ReferenceManagementSection() {
 
                       {/* Example Files List */}
                       <div className="space-y-1">
-                        {cat.examples?.map((file, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-2 pl-3 bg-slate-50 rounded-lg group">
-                            <span className="text-xs text-slate-600 truncate max-w-[150px]">{file.name}</span>
-                            <div className="flex items-center gap-1">
-                              <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-1 text-slate-400 hover:text-primary">
-                                <Eye className="h-3.5 w-3.5" />
-                              </a>
-                              <button 
-                                onClick={() => handleDeleteFile(cat.id, 'examples', idx)}
-                                className="p-1 text-slate-400 hover:text-red-500"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                        {cat.examples && cat.examples.length > 0 ? (
+                          cat.examples.map((file, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2 pl-3 bg-slate-50 rounded-lg group">
+                              <span className="text-xs text-slate-600 truncate max-w-[150px]">{file.name}</span>
+                              <div className="flex items-center gap-1">
+                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-1 text-slate-400 hover:text-primary">
+                                  <Eye className="h-3.5 w-3.5" />
+                                </a>
+                                <button 
+                                  onClick={() => handleDeleteFile(cat.id, 'examples', idx)}
+                                  className="p-1 text-slate-400 hover:text-red-500"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                        {/* Legacy Support */}
-                        {cat.exampleUrl && !cat.examples?.length && (
-                          <div className="flex items-center justify-between p-2 pl-3 bg-amber-50 rounded-lg">
-                            <span className="text-xs text-amber-700 truncate">기존 일지 (교체 필요)</span>
-                            <a href={cat.exampleUrl} target="_blank" rel="noopener noreferrer" className="p-1 text-amber-700">
-                              <Eye className="h-3.5 w-3.5" />
-                            </a>
+                          ))
+                        ) : (
+                          <div className="text-[10px] text-slate-400 text-center py-2 border border-dashed rounded-lg bg-slate-50/50">
+                            등록된 파일이 없습니다.
                           </div>
                         )}
                       </div>

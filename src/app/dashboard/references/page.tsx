@@ -32,8 +32,6 @@ type DocumentCategory = {
   why: string;
   forms?: ReferenceFile[];
   examples?: ReferenceFile[];
-  formUrl?: string; // 레거시 지원
-  exampleUrl?: string; // 레거시 지원
 };
 
 type SiteReference = {
@@ -123,14 +121,12 @@ export default function ReferencesPage() {
                       title="다운로드" 
                       icon={<Download className="h-4 w-4 mr-2" />} 
                       files={cat.forms} 
-                      legacyUrl={cat.formUrl} 
                       primary
                     />
                     <ReferenceButton 
                       title="작성 예시" 
                       icon={<Eye className="h-4 w-4 mr-2" />} 
                       files={cat.examples} 
-                      legacyUrl={cat.exampleUrl} 
                     />
                   </div>
                 </CardContent>
@@ -199,26 +195,21 @@ export default function ReferencesPage() {
     </div>
   );
 }
-
 function ReferenceButton({ 
   title, 
   icon, 
   files, 
-  legacyUrl, 
   primary = false 
 }: { 
   title: string; 
   icon: React.ReactNode; 
   files?: ReferenceFile[]; 
-  legacyUrl?: string;
   primary?: boolean;
 }) {
   const { toast } = useToast();
   
-  // 실제 사용 가능한 파일 목록 (배열 우선, 없으면 레거시 URL)
-  const availableFiles = files && files.length > 0 
-    ? files 
-    : (legacyUrl ? [{ name: `${title}.pdf`, url: legacyUrl }] : []);
+  // 실제 사용 가능한 파일 목록
+  const availableFiles = files && files.length > 0 ? files : [];
 
   const handleDownloadAll = async () => {
     for (let i = 0; i < availableFiles.length; i++) {
