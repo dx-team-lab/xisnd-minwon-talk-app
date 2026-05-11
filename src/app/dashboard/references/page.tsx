@@ -215,36 +215,40 @@ function ReferenceButton({
 
   const handleDownloadAll = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (availableFiles.length === 0) return;
-
+    if (!availableFiles || availableFiles.length === 0) return;
+    
     setIsZipping(true);
     try {
       const zip = new JSZip();
 
+      // 파일 fetch 및 zip 객체에 추가
       const fetchPromises = availableFiles.map(async (file) => {
         try {
           const response = await fetch(file.url);
-          if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
+          if (!response.ok) throw new Error('파일을 불러오는데 실패했습니다.');
           const blob = await response.blob();
           zip.file(file.name, blob);
         } catch (err) {
           console.error(`Failed to download ${file.name}:`, err);
+          throw err; // Re-throw to be caught by the outer catch
         }
       });
 
       await Promise.all(fetchPromises);
+
+      // ZIP 파일 생성 및 브라우저 다운로드 실행
       const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, `${title || '참고자료'}_첨부파일.zip`);
+      saveAs(content, `${title || '참고자료'}_전체파일.zip`);
       
       toast({
         title: "다운로드 완료",
         description: "모든 파일이 ZIP으로 압축되어 다운로드되었습니다.",
       });
     } catch (error) {
-      console.error('ZIP generation failed:', error);
+      console.error('ZIP 생성 실패:', error);
       toast({
         title: "다운로드 실패",
-        description: "파일 압축 중 오류가 발생했습니다.",
+        description: "파일을 압축하여 다운로드하는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     } finally {
