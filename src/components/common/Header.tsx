@@ -2,6 +2,8 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
+import logoImg from '../../../public/logo.png';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, Settings, Loader2, Users, SlidersHorizontal, ChevronDown, History, Bell } from 'lucide-react';
@@ -73,11 +75,11 @@ export default function Header() {
         {/* Left: Logo */}
         <div className="flex items-center">
           <Link href="/dashboard" className="flex items-center gap-3 mr-10 hover:opacity-80 transition-opacity">
-            <img
-              src="../logo.png"
+            <Image
+              src={logoImg}
               alt="MinwonTalk Logo"
-              width="32"
-              height="32"
+              width={32}
+              height={32}
               className="h-8 w-auto object-contain"
             />
             <span className="text-xl font-extrabold tracking-tight text-slate-800">
