@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
 
 type ReferenceFile = {
   name: string;
@@ -207,21 +208,48 @@ function ReferenceButton({
   primary?: boolean;
 }) {
   const { toast } = useToast();
+  const [isZipping, setIsZipping] = useState(false);
   
   // 실제 사용 가능한 파일 목록
   const availableFiles = files && files.length > 0 ? files : [];
 
-  const handleDownloadAll = async () => {
-    for (let i = 0; i < availableFiles.length; i++) {
-      const file = availableFiles[i];
-      // 브라우저 팝업 차단 방지를 위해 약간의 딜레이
-      await new Promise(resolve => setTimeout(resolve, 200));
-      saveAs(file.url, file.name);
+  const handleDownloadAll = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (availableFiles.length === 0) return;
+
+    setIsZipping(true);
+    try {
+      const zip = new JSZip();
+
+      const fetchPromises = availableFiles.map(async (file) => {
+        try {
+          const response = await fetch(file.url);
+          if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
+          const blob = await response.blob();
+          zip.file(file.name, blob);
+        } catch (err) {
+          console.error(`Failed to download ${file.name}:`, err);
+        }
+      });
+
+      await Promise.all(fetchPromises);
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${title || '참고자료'}_첨부파일.zip`);
+      
+      toast({
+        title: "다운로드 완료",
+        description: "모든 파일이 ZIP으로 압축되어 다운로드되었습니다.",
+      });
+    } catch (error) {
+      console.error('ZIP generation failed:', error);
+      toast({
+        title: "다운로드 실패",
+        description: "파일 압축 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsZipping(false);
     }
-    toast({
-      title: "전체 다운로드 시작",
-      description: `${availableFiles.length}개의 파일 다운로드를 시작합니다.`
-    });
   };
 
   const hasFiles = availableFiles.length > 0;
@@ -285,27 +313,40 @@ function ReferenceButton({
           <ChevronDown className="h-3 w-3 ml-2 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px] rounded-2xl p-2 shadow-xl border-slate-100">
+      <DropdownMenuContent align="end" className="w-80 min-w-[320px] rounded-2xl p-2 shadow-xl border-slate-100 overflow-hidden">
         <div className="px-2 py-1.5 text-xs font-bold text-slate-400 border-b border-slate-50 mb-1">파일 선택 ({availableFiles.length})</div>
         
         {availableFiles.length > 1 && (
           <>
             <DropdownMenuItem 
               onClick={handleDownloadAll}
-              className="rounded-xl cursor-pointer focus:bg-primary focus:text-white font-bold text-primary"
+              disabled={isZipping}
+              className="rounded-xl cursor-pointer focus:bg-primary focus:text-white font-bold text-primary flex items-center gap-2"
             >
-              <Download className="h-3.5 w-3.5 mr-2" />
-              전체 파일 다운로드
+              {isZipping ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isZipping ? '압축 중...' : '전체 파일 다운로드 (ZIP)'}
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-1 bg-slate-50" />
           </>
         )}
 
         {availableFiles.map((file, idx) => (
-          <DropdownMenuItem key={idx} asChild className="rounded-xl cursor-pointer focus:bg-primary/5 focus:text-primary">
-            <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center w-full py-2.5">
-              <FileText className="h-3.5 w-3.5 mr-2 opacity-50" />
-              <span className="truncate flex-1">{file.name}</span>
+          <DropdownMenuItem key={idx} asChild className="rounded-xl cursor-pointer focus:bg-primary/5 focus:text-primary py-3">
+            <a 
+              href={file.url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-start w-full gap-2 px-1"
+              title={file.name}
+            >
+              <FileText className="h-4 w-4 mt-0.5 opacity-50 shrink-0" />
+              <span className="text-sm font-medium text-slate-700 whitespace-normal break-words line-clamp-2 flex-1 leading-snug">
+                {file.name}
+              </span>
             </a>
           </DropdownMenuItem>
         ))}

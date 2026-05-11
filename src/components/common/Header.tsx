@@ -1,6 +1,6 @@
-
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import logoImg from '../../../public/logo.png';
@@ -11,11 +11,16 @@ import { signOut } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
+import { NotificationBell } from './NotificationBell';
+
+// NotificationBell has been moved to its own file NotificationBell.tsx
 
 export default function Header() {
   const auth = useAuth();
   const db = useFirestore();
   const { user, isUserLoading } = useUser();
+  const { isAdmin, isManager, isRoleLoading } = useAdminStatus();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -25,31 +30,6 @@ export default function Header() {
   }, [db, user?.uid]);
 
   const { data: userProfile } = useDoc(userProfileRef);
-
-  const adminsQuery = useMemoFirebase(() => {
-    if (!db || !user) return null;
-    return collection(db, 'roles_admin');
-  }, [db, user]);
-
-  const managersQuery = useMemoFirebase(() => {
-    if (!db || !user) return null;
-    return collection(db, 'roles_manager');
-  }, [db, user]);
-
-  const { data: admins } = useCollection(adminsQuery);
-  const { data: managers } = useCollection(managersQuery);
-
-  const isAdmin = !!(user && admins && admins.some(a => a.id === user.uid));
-  const isManager = !!(user && managers && managers.some(m => m.id === user.uid));
-  const hasSettingsAccess = isAdmin || isManager;
-
-  const pendingInquiriesQuery = useMemoFirebase(() => {
-    if (!db || !hasSettingsAccess) return null;
-    return query(collection(db, 'inquiries'), where('status', '==', 'pending'));
-  }, [db, hasSettingsAccess]);
-
-  const { data: pendingInquiries } = useCollection(pendingInquiriesQuery);
-  const pendingCount = pendingInquiries?.length || 0;
 
   const handleLogout = async () => {
     try {
@@ -92,12 +72,9 @@ export default function Header() {
         <nav className="hidden lg:flex items-center gap-10">
           {navItems.map((item) => {
             let isActive = false;
-
-            // '홈' 메뉴(/dashboard)는 하위 경로와 겹치지 않도록 정확한 일치만 확인
             if (item.href === '/dashboard') {
               isActive = pathname === '/dashboard' || pathname === '/dashboard/';
             } else {
-              // 나머지 하위 메뉴들은 자신의 경로로 시작하는지 포함하여 확인
               isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             }
 
@@ -142,7 +119,6 @@ export default function Header() {
                     시스템 로그
                   </Link>
                 </DropdownMenuItem>
-
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -150,23 +126,10 @@ export default function Header() {
 
         {/* Right: User Info & Logout */}
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-3">
-            {hasSettingsAccess && (
-              <Link
-                href="/dashboard/settings/system?tab=inquiries"
-                className="relative p-2 text-slate-400 hover:text-primary transition-colors group"
-                title="새로운 문의/요청"
-              >
-                <Bell className="h-5 w-5" />
-                {pendingCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </span>
-                )}
-              </Link>
-            )}
+            <NotificationBell />
+            {/* 내 문의 내역 버튼 제거됨 (시스템 단순화) */}
 
-            {isUserLoading ? (
+            {isUserLoading || isRoleLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : user ? (
               <div className="flex items-center gap-4">
@@ -187,7 +150,7 @@ export default function Header() {
                   )}
                   {isManager && !isAdmin && (
                     <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-slate-200">
-                      관리자
+                      매니저
                     </span>
                   )}
                 </div>
@@ -209,7 +172,6 @@ export default function Header() {
                 <Link href="/">로그인</Link>
               </Button>
             )}
-          </div>
         </div>
       </div>
     </header>

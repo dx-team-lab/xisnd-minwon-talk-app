@@ -4,6 +4,9 @@ import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { useFirestore, useUser, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { logActivity } from '@/lib/activity-logs';
+import { useDoc } from '@/firebase';
+import { UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +44,13 @@ export default function ActionPlanLinkSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const linksQuery = useMemoFirebase(() => query(collection(db, 'actionPlanLinks'), orderBy('createdAt', 'desc')), [db]);
+  const userProfileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, 'users', user.uid);
+  }, [db, user]);
+
   const { data: links, isLoading } = useCollection(linksQuery);
+  const { data: userProfile } = useDoc(userProfileRef);
 
   const handleReset = () => {
     setTitle('');
@@ -50,7 +59,7 @@ export default function ActionPlanLinkSection() {
     setEditingId(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !url.trim()) {
       toast({ title: "입력 오류", description: "제목과 URL을 모두 입력해주세요.", variant: "destructive" });
@@ -75,6 +84,19 @@ export default function ActionPlanLinkSection() {
         createdBy: user?.uid || 'system'
       });
       toast({ title: "성공", description: "조치방안 링크가 등록되었습니다." });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: editingId ? 'UPDATE' : 'CREATE',
+          targetSiteName: '조치방안 링크',
+          targetId: editingId || 'new_link',
+          details: `조치방안 링크 ${editingId ? '수정' : '추가'}: ${title}`
+        });
+      }
     }
     handleReset();
   };
@@ -134,6 +156,19 @@ export default function ActionPlanLinkSection() {
             }
           }
           toast({ title: "임포트 완료", description: `${successCount}개의 링크가 등록되었습니다.` });
+
+          // Activity log
+          if (user) {
+            const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+            await logActivity(db, {
+              actorEmail: user.email || '',
+              actorName: actorName,
+              action: 'CREATE',
+              targetSiteName: '조치방안 링크',
+              targetId: 'excel_import',
+              details: `조치방안 링크 엑셀 임포트: ${successCount}건`
+            });
+          }
         } catch (error) {
           console.error("Parse error:", error);
           toast({ title: "임포트 실패", description: `엑셀 데이터 파싱 오류: ${(error as Error)?.message || '알 수 없는 오류'}`, variant: "destructive" });
@@ -156,15 +191,29 @@ export default function ActionPlanLinkSection() {
     }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteConfirmId) {
+      const linkToDelete = links?.find(l => l.id === deleteConfirmId);
       deleteDocumentNonBlocking(doc(db, 'actionPlanLinks', deleteConfirmId));
       toast({ title: "삭제 완료", description: "링크가 삭제되었습니다." });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'DELETE',
+          targetSiteName: '조치방안 링크',
+          targetId: deleteConfirmId,
+          details: `조치방안 링크 삭제: ${linkToDelete?.title || 'Unknown'}`
+        });
+      }
       setDeleteConfirmId(null);
     }
   };
 
-  const handleExcelDownload = () => {
+  const handleExcelDownload = async () => {
     console.log("엑셀 다운로드 함수 실행됨");
     if (!links || links.length === 0) {
       toast({ title: "다운로드 실패", description: "다운로드할 데이터가 없습니다.", variant: "destructive" });
@@ -198,6 +247,19 @@ export default function ActionPlanLinkSection() {
       document.body.removeChild(link);
 
       toast({ title: "다운로드 완료", description: "조치방안 링크 데이터가 엑셀로 저장되었습니다." });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'CREATE',
+          targetSiteName: '조치방안 링크',
+          targetId: 'excel_export',
+          details: `조치방안 링크 엑셀 다운로드: ${excelData.length}건`
+        });
+      }
     } catch (error) {
       console.error('Download error:', error);
       toast({ title: "다운로드 실패", description: "엑셀 파일 생성 중 오류가 발생했습니다.", variant: "destructive" });
@@ -211,6 +273,19 @@ export default function ActionPlanLinkSection() {
         deleteDocumentNonBlocking(doc(db, 'actionPlanLinks', l.id));
       }
       toast({ title: "삭제 완료", description: "모든 조치방안 링크가 삭제되었습니다." });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'DELETE',
+          targetSiteName: '조치방안 링크',
+          targetId: 'clear_all',
+          details: `조치방안 링크 전체 삭제: ${(links || []).length}건`
+        });
+      }
     } catch (error) {
       console.error('Clear error:', error);
       toast({ title: "삭제 실패", description: "데이터 삭제 중 오류가 발생했습니다.", variant: "destructive" });

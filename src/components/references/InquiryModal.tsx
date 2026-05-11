@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,13 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
   const { user } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null;
+    return doc(db, 'users', user.uid);
+  }, [db, user?.uid]);
+
+  const { data: userProfile } = useDoc(userProfileRef);
 
   const handleSubmit = async () => {
     if (!content.trim()) {
@@ -54,7 +61,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
         createdAt: serverTimestamp(),
         userId: user.uid,
         userEmail: user.email,
-        userName: user.displayName || '익명 사용자',
+        userName: userProfile?.name || user.displayName || user.email?.split('@')[0] || '알 수 없음',
       });
 
       toast({

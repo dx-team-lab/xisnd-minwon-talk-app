@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useFirestore, useStorage, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useStorage, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { logActivity } from '@/lib/activity-logs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Upload, FileText, Globe, Plus, Trash2, ExternalLink, FileDown, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { UserProfile } from '@/lib/types';
 
 type ReferenceFile = {
   name: string;
@@ -46,6 +48,7 @@ const DEFAULT_CATEGORIES: DocumentCategory[] = [
 export default function ReferenceManagementSection() {
   const db = useFirestore();
   const storage = useStorage();
+  const { user } = useUser();
   const { toast } = useToast();
   
   const settingsRef = useMemoFirebase(() => {
@@ -53,7 +56,13 @@ export default function ReferenceManagementSection() {
     return doc(db, 'settings', 'references');
   }, [db]);
 
+  const userProfileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, 'users', user.uid);
+  }, [db, user]);
+
   const { data: references, isLoading: isReferencesLoading } = useDoc(settingsRef);
+  const { data: userProfile } = useDoc(userProfileRef);
   
   const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
   const [uploadType, setUploadType] = useState<'form' | 'example' | null>(null);
@@ -97,6 +106,19 @@ export default function ReferenceManagementSection() {
       }, { merge: true });
       
       toast({ title: '파일 업로드 완료', description: `${newFiles.length}개의 파일이 저장되었습니다.` });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'CREATE',
+          targetSiteName: '참고자료',
+          targetId: categoryId,
+          details: `참고자료 추가: ${newFiles.map(f => f.name).join(', ')}`
+        });
+      }
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({ title: '업로드 실패', description: error.message, variant: 'destructive' });
@@ -128,6 +150,21 @@ export default function ReferenceManagementSection() {
       }, { merge: true });
 
       toast({ title: '파일 삭제 완료' });
+
+      // Activity log
+      if (user) {
+        const cat = categories.find((c: any) => c.id === categoryId);
+        const fileName = cat ? (cat[type] && cat[type][fileIndex]?.name) : '파일';
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'DELETE',
+          targetSiteName: '참고자료',
+          targetId: categoryId,
+          details: `참고자료 삭제: ${fileName}`
+        });
+      }
     } catch (error: any) {
       toast({ title: '삭제 실패', description: error.message, variant: 'destructive' });
     }
@@ -146,6 +183,19 @@ export default function ReferenceManagementSection() {
       
       setNewSite({ title: '', url: '' });
       toast({ title: '사이트 추가 완료' });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'CREATE',
+          targetSiteName: '참고 사이트',
+          targetId: 'new_site',
+          details: `참고 사이트 추가: ${newSite.title}`
+        });
+      }
     } catch (error: any) {
       toast({ title: '사이트 추가 실패', description: error.message, variant: 'destructive' });
     } finally {
@@ -164,6 +214,20 @@ export default function ReferenceManagementSection() {
       }, { merge: true });
       
       toast({ title: '사이트 삭제 완료' });
+
+      // Activity log
+      if (user) {
+        const site = sites.find((s: any) => s.id === id);
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'DELETE',
+          targetSiteName: '참고 사이트',
+          targetId: id,
+          details: `참고 사이트 삭제: ${site?.title || 'Unknown'}`
+        });
+      }
     } catch (error: any) {
       toast({ title: '삭제 실패', variant: 'destructive' });
     }

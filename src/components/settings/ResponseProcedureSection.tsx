@@ -3,12 +3,14 @@
 import { useState, useCallback } from 'react';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { logActivity } from '@/lib/activity-logs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { cn } from '@/lib/utils';
+import { UserProfile } from '@/lib/types';
 
 export default function ResponseProcedureSection() {
   const db = useFirestore();
@@ -21,7 +23,13 @@ export default function ResponseProcedureSection() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const procedureDocRef = useMemoFirebase(() => doc(db, 'settings', 'procedure'), [db]);
+  const userProfileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, 'users', user.uid);
+  }, [db, user]);
+
   const { data: procedureData, isLoading } = useDoc(procedureDocRef);
+  const { data: userProfile } = useDoc(userProfileRef);
 
   // Image Processing Utility
   const processImage = (file: File): Promise<string> => {
@@ -92,6 +100,19 @@ export default function ResponseProcedureSection() {
       }, { merge: true });
 
       toast({ title: "업로드 성공", description: "민원 대응 절차 이미지가 등록되었습니다." });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'UPDATE',
+          targetSiteName: '대응 절차',
+          targetId: 'procedure_image',
+          details: '민원 대응 절차 내용 수정'
+        });
+      }
     } catch (error: any) {
       console.error("Processing/Upload error:", error);
       toast({ 
@@ -138,6 +159,19 @@ export default function ResponseProcedureSection() {
       });
 
       toast({ title: "삭제 성공", description: "이미지가 삭제되었습니다." });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'DELETE',
+          targetSiteName: '대응 절차',
+          targetId: 'procedure_image',
+          details: '민원 대응 절차 이미지 삭제'
+        });
+      }
     } catch (error) {
       console.error("Delete error:", error);
       toast({ title: "삭제 실패", description: "이미지 삭제 중 오류가 발생했습니다.", variant: "destructive" });

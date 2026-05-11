@@ -4,6 +4,9 @@ import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { useFirestore, useUser, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { logActivity } from '@/lib/activity-logs';
+import { useDoc } from '@/firebase';
+import { UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,7 +56,13 @@ export default function CaseExampleSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const casesQuery = useMemoFirebase(() => query(collection(db, 'caseExamples'), orderBy('createdAt', 'desc')), [db]);
+  const userProfileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, 'users', user.uid);
+  }, [db, user]);
+
   const { data: cases, isLoading } = useCollection(casesQuery);
+  const { data: userProfile } = useDoc(userProfileRef);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -97,7 +106,7 @@ export default function CaseExampleSection() {
     setEditingId(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { siteName, region, phase, type, complainant, requestContent, compensationMethod, occurrenceDate, progress } = formData;
 
@@ -123,6 +132,19 @@ export default function CaseExampleSection() {
         createdBy: user?.uid
       });
       toast({ title: "성공", description: "사례가 등록되었습니다." });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: editingId ? 'UPDATE' : 'CREATE',
+          targetSiteName: '사례',
+          targetId: editingId || 'new_case',
+          details: `사례 ${editingId ? '수정' : '추가'}: ${formData.siteName} (${formData.complaintContent.substring(0, 20)}...)`
+        });
+      }
     }
     handleReset();
   };
@@ -232,6 +254,18 @@ export default function CaseExampleSection() {
             successCount++;
           }
           toast({ title: "임포트 완료", description: `${successCount}개의 데이터가 성공적으로 등록되었습니다.` });
+
+          // Activity log
+          if (user) {
+            await logActivity(db, {
+              actorEmail: user.email || '',
+              actorName: user.displayName || user.email?.split('@')[0] || 'Unknown',
+              action: 'CREATE',
+              targetSiteName: '사례',
+              targetId: 'excel_import',
+              details: `사례 엑셀 임포트: ${successCount}건`
+            });
+          }
         } catch (error) {
           console.error("Parse error inside onload:", error);
           toast({ title: "임포트 실패", description: "데이터 변환 중 오류가 발생했습니다.", variant: "destructive" });
@@ -258,8 +292,21 @@ export default function CaseExampleSection() {
   const handleDelete = async (id: string) => {
     if (window.confirm('정말 삭제하시겠습니까?')) {
       try {
+        const caseToDelete = cases?.find(c => c.id === id);
         deleteDocumentNonBlocking(doc(db, 'caseExamples', id));
         toast({ title: "삭제 완료", description: "사례가 삭제되었습니다." });
+
+        // Activity log
+        if (user) {
+          await logActivity(db, {
+            actorEmail: user.email || '',
+            actorName: user.displayName || user.email?.split('@')[0] || 'Unknown',
+            action: 'DELETE',
+            targetSiteName: '사례',
+            targetId: id,
+            details: `사례 삭제: ${caseToDelete?.siteName || 'Unknown'}`
+          });
+        }
       } catch (error) {
         console.error('Delete error:', error);
         toast({ title: "삭제 실패", description: "삭제 중 오류가 발생했습니다.", variant: "destructive" });
@@ -267,7 +314,7 @@ export default function CaseExampleSection() {
     }
   };
 
-  const handleExcelDownload = () => {
+  const handleExcelDownload = async () => {
     console.log("사례 엑셀 다운로드 함수 실행됨");
     if (!cases || cases.length === 0) {
       toast({ title: "다운로드 실패", description: "다운로드할 데이터가 없습니다.", variant: "destructive" });
@@ -304,6 +351,18 @@ export default function CaseExampleSection() {
       document.body.removeChild(link);
       
       toast({ title: "다운로드 완료", description: "사례 데이터가 엑셀로 저장되었습니다." });
+
+      // Activity log
+      if (user) {
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: user.displayName || user.email?.split('@')[0] || 'Unknown',
+          action: 'CREATE',
+          targetSiteName: '사례',
+          targetId: 'excel_export',
+          details: `사례 엑셀 다운로드: ${excelData.length}건`
+        });
+      }
     } catch (error) {
       console.error('Download error:', error);
       toast({ title: "다운로드 실패", description: "엑셀 파일 생성 중 오류가 발생했습니다.", variant: "destructive" });
@@ -319,6 +378,18 @@ export default function CaseExampleSection() {
         count++;
       }
       toast({ title: "전체 삭제 완료", description: `${count}개의 데이터를 삭제했습니다.` });
+
+      // Activity log
+      if (user) {
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: user.displayName || user.email?.split('@')[0] || 'Unknown',
+          action: 'DELETE',
+          targetSiteName: '사례',
+          targetId: 'clear_all',
+          details: `사례 전체 삭제: ${count}건`
+        });
+      }
     } catch (error) {
       console.error('Clear all error:', error);
       toast({ title: "삭제 실패", description: "데이터 삭제 중 오류가 발생했습니다.", variant: "destructive" });

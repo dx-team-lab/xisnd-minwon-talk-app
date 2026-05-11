@@ -4,6 +4,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { logActivity } from '@/lib/activity-logs';
+import { useDoc } from '@/firebase';
+import { UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +53,13 @@ export default function ResponseGuideSection() {
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const guidesQuery = useMemoFirebase(() => query(collection(db, 'responseGuides'), orderBy('createdAt', 'desc')), [db]);
+  const userProfileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, 'users', user.uid);
+  }, [db, user]);
+
   const { data: guides, isLoading } = useCollection(guidesQuery);
+  const { data: userProfile } = useDoc(userProfileRef);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -71,7 +80,7 @@ export default function ResponseGuideSection() {
     setEditingId(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { region, phase, type, cause, action } = formData;
 
@@ -96,6 +105,19 @@ export default function ResponseGuideSection() {
         createdBy: user?.uid
       });
       toast({ title: "성공", description: "대응 방안이 등록되었습니다." });
+
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: editingId ? 'UPDATE' : 'CREATE',
+          targetSiteName: '대응 방안',
+          targetId: editingId || 'new_guide',
+          details: `대응 방안 ${editingId ? '수정' : '추가'}: ${formData.cause}`
+        });
+      }
     }
     handleReset();
   };
@@ -112,10 +134,24 @@ export default function ResponseGuideSection() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteConfirmId) {
+      const guideToDelete = guides?.find(g => g.id === deleteConfirmId);
       deleteDocumentNonBlocking(doc(db, 'responseGuides', deleteConfirmId));
       toast({ title: "삭제 완료", description: "대응 방안이 삭제되었습니다." });
+      
+      // Activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'DELETE',
+          targetSiteName: '대응 방안',
+          targetId: deleteConfirmId,
+          details: `대응 방안 삭제: ${guideToDelete?.cause || 'Unknown'}`
+        });
+      }
       setDeleteConfirmId(null);
     }
   };
@@ -178,6 +214,18 @@ export default function ResponseGuideSection() {
             }
           }
           toast({ title: "임포트 완료", description: `${successCount}개의 데이터가 Firestore에 등록되었습니다.` });
+
+          // Activity log
+          if (user) {
+            await logActivity(db, {
+              actorEmail: user.email || '',
+              actorName: user.displayName || user.email?.split('@')[0] || 'Unknown',
+              action: 'CREATE',
+              targetSiteName: '대응 방안',
+              targetId: 'excel_import',
+              details: `대응 방안 엑셀 임포트: ${successCount}건`
+            });
+          }
         } catch (error) {
           console.error("Parse error inside onload:", error, "error message:", (error as Error)?.message, "stack:", (error as Error)?.stack);
           toast({ title: "임포트 실패", description: `엑셀 데이터 파싱 오류: ${(error as Error)?.message || '알 수 없는 오류'}`, variant: "destructive" });
@@ -248,6 +296,18 @@ export default function ResponseGuideSection() {
         count++;
       }
       toast({ title: "삭제 완료", description: "모든 대응 방안이 삭제되었습니다." });
+
+      // Activity log
+      if (user) {
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: user.displayName || user.email?.split('@')[0] || 'Unknown',
+          action: 'DELETE',
+          targetSiteName: '대응 방안',
+          targetId: 'clear_all',
+          details: `대응 방안 전체 삭제: ${count}건`
+        });
+      }
     } catch (error) {
       console.error('Clear error:', error);
       toast({ title: "삭제 실패", description: "데이터 삭제 중 오류가 발생했습니다.", variant: "destructive" });

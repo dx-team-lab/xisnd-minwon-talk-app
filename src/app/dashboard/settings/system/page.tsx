@@ -16,13 +16,49 @@ import MainImageSettingsSection from '@/components/settings/MainImageSettingsSec
 import ReferenceManagementSection from '@/components/settings/ReferenceManagementSection';
 import InquiryManagementSection from '@/components/settings/InquiryManagementSection';
 
+const TAB_GROUPS = [
+  {
+    category: '홈페이지 메인',
+    tabs: [
+      { id: 'mainImage', label: '메인 이미지' },
+    ]
+  },
+  {
+    category: '민원 현황',
+    tabs: [
+      { id: 'site', label: '현장 관리' },
+    ]
+  },
+  {
+    category: '민원 대응 절차',
+    tabs: [
+      { id: 'procedure', label: '민원 대응 절차 관리' },
+    ]
+  },
+  {
+    category: '대응 방안 / 유사 사례',
+    tabs: [
+      { id: 'response', label: '대응 방안' },
+      { id: 'case', label: '사례' },
+      { id: 'actionLinks', label: '조치방안(링크)' },
+    ]
+  },
+  {
+    category: '참고자료 / 문의',
+    tabs: [
+      { id: 'references', label: '참고자료 관리' },
+      { id: 'inquiries', label: '문의/요청 관리' },
+    ]
+  }
+];
+
 export default function SystemSettingsPage() {
   const { user, isUserLoading } = useUser();
   const db = useFirestore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabParam || 'site');
+  const [activeTab, setActiveTab] = useState(tabParam || 'mainImage');
 
 
   const adminsQuery = useMemoFirebase(() => {
@@ -82,31 +118,26 @@ export default function SystemSettingsPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-white border w-full md:w-auto grid grid-cols-2 lg:flex rounded-xl p-1 h-auto">
-            <TabsTrigger value="site" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-              현장 관리
-            </TabsTrigger>
-            <TabsTrigger value="mainImage" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-              메인 이미지
-            </TabsTrigger>
-            <TabsTrigger value="procedure" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-              민원 대응 절차 관리
-            </TabsTrigger>
-            <TabsTrigger value="references" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-              참고자료 관리
-            </TabsTrigger>
-            <TabsTrigger value="inquiries" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-              문의/요청 관리
-            </TabsTrigger>
-            <TabsTrigger value="response" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-              대응 방안
-            </TabsTrigger>
-            <TabsTrigger value="case" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-              사례
-            </TabsTrigger>
-            <TabsTrigger value="actionLinks" className="rounded-lg py-3 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-              조치방안(링크)
-            </TabsTrigger>
+          <TabsList className="bg-transparent border-0 w-full h-auto flex flex-wrap items-end gap-x-6 gap-y-6 p-0">
+            {TAB_GROUPS.map((group) => (
+              <div key={group.category} className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 ml-1">
+                  <div className="h-1 w-1 rounded-full bg-primary" />
+                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-none">{group.category}</span>
+                </div>
+                <div className="flex items-center bg-white p-1 rounded-[16px] border border-slate-200 shadow-sm gap-1">
+                  {group.tabs.map((tab) => (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="rounded-[12px] py-2.5 px-6 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all whitespace-nowrap"
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </div>
+              </div>
+            ))}
           </TabsList>
           
           <div className="mt-8">

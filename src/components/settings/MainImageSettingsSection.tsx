@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { useFirestore, useStorage, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useStorage, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { logActivity } from '@/lib/activity-logs';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,11 +12,13 @@ import { Loader2, Upload, Image as ImageIcon, CheckCircle2, AlertCircle, FileUp,
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { UserProfile } from '@/lib/types';
 
 export default function MainImageSettingsSection() {
   const db = useFirestore();
   const storage = useStorage();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user, isUserLoading: isAuthLoading } = useUser();
   const { toast } = useToast();
   
   const [file, setFile] = useState<File | null>(null);
@@ -30,7 +33,13 @@ export default function MainImageSettingsSection() {
     return doc(db, 'settings', 'system');
   }, [db]);
 
+  const userProfileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, 'users', user.uid);
+  }, [db, user]);
+
   const { data: settings, isLoading: isSettingsLoading } = useDoc(settingsRef);
+  const { data: userProfile } = useDoc(userProfileRef);
 
   const handleFileSelect = (selectedFile: File) => {
     if (!selectedFile.type.startsWith('image/')) {
@@ -108,6 +117,19 @@ export default function MainImageSettingsSection() {
       setFile(null);
       setPreviewUrl(null);
       toast({ title: '저장 완료', description: '메인 이미지가 성공적으로 변경되었습니다.' });
+
+      // Record activity log
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'UPDATE',
+          targetSiteName: '시스템 설정',
+          targetId: 'main_dashboard_image',
+          details: '메인 이미지 업데이트'
+        });
+      }
     } catch (error: any) {
       console.error("Upload error details:", error);
       setStatus('error');
