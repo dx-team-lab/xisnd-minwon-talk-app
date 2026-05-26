@@ -15,6 +15,7 @@ import SiteManagementSection from '@/components/settings/SiteManagementSection';
 import MainImageSettingsSection from '@/components/settings/MainImageSettingsSection';
 import ReferenceManagementSection from '@/components/settings/ReferenceManagementSection';
 import InquiryManagementSection from '@/components/settings/InquiryManagementSection';
+import ResponsePlanV2Section from '@/components/settings/ResponsePlanV2Section';
 
 const TAB_GROUPS = [
   {
@@ -39,6 +40,7 @@ const TAB_GROUPS = [
     category: '대응 방안 / 유사 사례',
     tabs: [
       { id: 'response', label: '대응 방안' },
+      { id: 'responseV2', label: '대응 방안 관리 (신규)' },
       { id: 'case', label: '사례' },
       { id: 'actionLinks', label: '조치방안(링크)' },
     ]
@@ -164,6 +166,9 @@ export default function SystemSettingsPage() {
             </TabsContent>
             <TabsContent value="actionLinks">
               <ActionPlanLinkSection />
+            </TabsContent>
+            <TabsContent value="responseV2">
+              <ResponsePlanV2Section />
             </TabsContent>
           </div>
         </Tabs>

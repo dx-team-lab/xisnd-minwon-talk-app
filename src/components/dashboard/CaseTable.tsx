@@ -90,31 +90,31 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
           <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : (
           <div className="overflow-x-auto">
-            <Table className="min-w-[1500px]">
+            <Table className="min-w-[1000px]">
               <TableHeader className="bg-slate-50 border-b">
                 <TableRow>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">지역</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">단계</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-sm">유형</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-sm">민원인</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[150px] border-r text-sm">요구사항</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[80px] border-r text-sm">진행경과</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">보상방식</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-sm">보상금액(원)</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] text-sm">상세내용</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[80px] border-r text-xs whitespace-nowrap">지역</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[80px] border-r text-xs whitespace-nowrap">단계</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[100px] border-r text-xs whitespace-nowrap">유형</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[100px] border-r text-xs whitespace-nowrap">민원인</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[120px] border-r text-xs whitespace-nowrap">요구사항</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[80px] border-r text-xs whitespace-nowrap">진행경과</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[90px] border-r text-xs whitespace-nowrap">보상방식</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[110px] border-r text-xs whitespace-nowrap">보상금액(원)</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[110px] text-xs whitespace-nowrap">상세내용</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {slicedData.length > 0 ? (
                   slicedData.map((item, idx) => (
                     <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="border-r text-center align-top p-4 text-sm">
+                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs whitespace-nowrap">
                         <CategoryBadge category="region">{item.region}</CategoryBadge>
                       </TableCell>
-                      <TableCell className="border-r text-center align-top p-4 text-sm">
+                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs whitespace-nowrap">
                         <CategoryBadge category="phase">{item.phase}</CategoryBadge>
                       </TableCell>
-                      <TableCell className="border-r text-center align-top p-4 text-sm">
+                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs whitespace-nowrap">
                         <div className="flex flex-wrap justify-center gap-1.5">
                           {Array.isArray(item.type) ? item.type.map((t: string) => (
                             <CategoryBadge key={t} category="type">{t}</CategoryBadge>
@@ -123,27 +123,27 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="align-top p-4 text-sm font-bold text-slate-700 border-r text-left">
+                      <TableCell className="align-top px-2 py-3 text-xs font-bold text-slate-700 border-r text-left">
                         {item.complainant}
                       </TableCell>
-                      <TableCell className="align-top p-4 border-r text-center text-sm">
+                      <TableCell className="align-top px-2 py-3 border-r text-center text-xs">
                         <div className="flex flex-wrap justify-center gap-1.5">
                           {Array.isArray(item.requestContent) ? item.requestContent.map((rt: string) => (
-                            <Badge key={rt} variant="outline" className="bg-rose-50 text-rose-600 border-none rounded-full text-sm font-bold whitespace-nowrap px-3 py-1">
+                            <Badge key={rt} variant="outline" className="bg-rose-50 text-rose-600 border-none rounded-full text-xs font-bold px-2 py-0.5">
                               {rt}
                             </Badge>
                           )) : (
-                            <Badge variant="outline" className="bg-rose-50 text-rose-600 border-none rounded-full text-sm font-bold whitespace-nowrap px-3 py-1">
+                            <Badge variant="outline" className="bg-rose-50 text-rose-600 border-none rounded-full text-xs font-bold px-2 py-0.5">
                               {item.requestContent}
                             </Badge>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="align-top p-4 text-center border-r text-sm">
+                      <TableCell className="align-top px-2 py-3 text-center border-r text-xs">
                         <Badge 
                           variant="outline" 
                           className={cn(
-                            "text-sm font-bold border-none rounded-full px-3 py-1 whitespace-nowrap",
+                            "text-xs font-bold border-none rounded-full px-2 py-0.5 whitespace-nowrap",
                             item.progress === '종결' ? "bg-slate-100 text-slate-600" :
                             item.progress === '진행' ? "bg-blue-50 text-blue-600" :
                             "bg-amber-50 text-amber-600"
@@ -152,15 +152,15 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
                           {item.progress}
                         </Badge>
                       </TableCell>
-                      <TableCell className="align-top p-4 border-r text-center text-sm">
-                        <Badge variant="outline" className="bg-teal-50 text-teal-600 border-none rounded-full text-sm font-bold whitespace-nowrap px-3 py-1">
+                      <TableCell className="align-top px-2 py-3 border-r text-center text-xs">
+                        <Badge variant="outline" className="bg-teal-50 text-teal-600 border-none rounded-full text-xs font-bold px-2 py-0.5 whitespace-nowrap">
                           {item.compensationMethod}
                         </Badge>
                       </TableCell>
-                      <TableCell className="align-top p-4 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap text-sm border-r">
+                      <TableCell className="align-top px-2 py-3 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap text-xs border-r">
                         {item.compensationAmount?.toLocaleString() || '-'}
                       </TableCell>
-                      <TableCell className="align-top p-4 text-sm text-slate-600 leading-relaxed max-w-[120px] text-center">
+                      <TableCell className="align-top px-2 py-3 text-xs text-slate-600 leading-relaxed max-w-[120px] text-center">
                         {item.details?.startsWith('http') ? (
                           <a 
                             href={item.details} 

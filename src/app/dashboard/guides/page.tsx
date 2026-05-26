@@ -48,9 +48,15 @@ export default function GuidesPage() {
     return collection(db, 'actionPlanLinks');
   }, [db, user]);
 
+  const responsePlansV2Query = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return query(collection(db, 'responsePlansV2'), orderBy('createdAt', 'desc'));
+  }, [db, user]);
+
   const { data: rawGuides, isLoading: isGuidesLoading } = useCollection(guidesQuery);
   const { data: rawCases, isLoading: isCasesLoading } = useCollection(casesQuery);
   const { data: rawActionPlanLinks } = useCollection(actionPlanLinksQuery);
+  const { data: rawPlansV2, isLoading: isPlansV2Loading } = useCollection(responsePlansV2Query);
 
   // Build dictionary: { "통제원 배치": "https://...", ... }
   const actionLinkDict = useMemo(() => {
@@ -228,17 +234,19 @@ export default function GuidesPage() {
           onSearchChange={setSearchKeyword}
           onDownload={handleDownload}
         />
-        <div className="flex flex-col gap-8">
-          <ResponsePlanTable
-            data={filteredGuides}
-            isLoading={isGuidesLoading}
-            isFilterActive={isResponseFilterActive}
-            actionLinkDict={actionLinkDict}
-          />
-          <CaseTable
-            data={filteredCases}
-            isLoading={isCasesLoading}
-          />
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 items-start">
+          <div className="xl:col-span-3">
+            <CaseTable
+              data={filteredCases}
+              isLoading={isCasesLoading}
+            />
+          </div>
+          <div className="xl:col-span-2">
+            <ResponsePlanTable
+              data={rawPlansV2}
+              isLoading={isPlansV2Loading}
+            />
+          </div>
         </div>
       </main>
     </div>
