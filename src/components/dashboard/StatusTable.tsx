@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Site, SiteImage, SiteComplaint } from '@/lib/types';
-import { Loader2, SearchX, X, Check, Hourglass, Circle } from 'lucide-react';
+import { Loader2, SearchX, X, Check, Hourglass, Circle, Map } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CategoryBadge } from '@/components/common/CategoryBadge';
 import { useFirestore } from '@/firebase';
@@ -24,6 +24,40 @@ const getCircledNumber = (num: number) => {
 };
 
 const STAGES = ['민원 발생', '민원 대응', '보상 협상', '합의 및 집행', '완료'];
+
+const PHASE_STEPS: Record<string, number> = { '착공전': 1, '토공': 2, '골조': 3, '마감': 4, '준공': 5 };
+
+const PhaseProgressBar = ({ phases }: { phases: string[] }) => {
+  let maxStep = 0;
+  let label = '';
+  phases.forEach(p => {
+    const step = PHASE_STEPS[p] || 0;
+    if (step > maxStep) {
+      maxStep = step;
+      label = p;
+    }
+  });
+
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      {/* 5-box progress bar */}
+      <div className="flex w-20 h-2.5 rounded-sm overflow-hidden border border-slate-300 bg-white">
+        {[1, 2, 3, 4, 5].map((step) => (
+          <div
+            key={step}
+            className={`flex-1 ${step < 5 ? 'border-r border-slate-300' : ''} ${step <= maxStep ? 'bg-teal-400' : 'bg-transparent'}`}
+          />
+        ))}
+      </div>
+      {/* Status badge */}
+      {label && (
+        <span className="inline-block px-3 py-0.5 text-xs rounded-full bg-orange-100 text-orange-600 font-bold whitespace-nowrap">
+          {label}
+        </span>
+      )}
+    </div>
+  );
+};
 
 const ComplaintDetailsModal = ({ 
   siteName, 
@@ -488,11 +522,12 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
           <Table className="border-collapse min-w-[1000px]">
             <TableHeader className="bg-slate-50 border-b">
               <TableRow>
-                <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[180px] text-sm">지역</TableHead>
+                <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[120px] text-sm">입지</TableHead>
                 <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[200px] text-sm">현장명</TableHead>
-                <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[200px] text-sm">단계</TableHead>
+                <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[280px] text-sm">공사 진행 단계</TableHead>
                 <TableHead className="h-12 font-bold border-r text-slate-700 w-[240px] text-sm text-center">민원 처리 현황</TableHead>
-                <TableHead className="h-12 font-bold text-slate-700 text-sm text-center">주요 내용</TableHead>
+                <TableHead className="h-12 font-bold border-r text-slate-700 text-sm text-center">주요 내용</TableHead>
+                <TableHead className="h-12 font-bold text-slate-700 text-center w-[90px] text-sm">민원 지도</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -500,24 +535,18 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
                 data.map((site) => (
                   <React.Fragment key={site.id}>
                     <TableRow 
-                      className="hover:bg-slate-50/50 transition-colors cursor-pointer"
-                      onClick={() => handleRowClick(site)}
+                      className="hover:bg-slate-50/50 transition-colors"
                     >
                       <TableCell className="border-r text-center align-middle p-4 font-bold text-slate-700 text-sm">
                         <div className="flex items-center justify-center gap-2">
-                          <span>{site.region}</span>
                           <CategoryBadge category="regionType">{site.regionType?.replace('지역', '')}</CategoryBadge>
                         </div>
                       </TableCell>
                       <TableCell className="border-r text-center align-middle p-4 font-bold text-slate-900 text-sm">
                         {site.siteName}
                       </TableCell>
-                      <TableCell className="border-r text-center align-middle p-4 text-sm">
-                        <div className="flex flex-row flex-wrap justify-center gap-1.5">
-                          {(Array.isArray(site.phase) ? site.phase : [site.phase]).filter(Boolean).map((p: string) => (
-                            <CategoryBadge key={p} category="phase">{p}</CategoryBadge>
-                          ))}
-                        </div>
+                      <TableCell className="border-r text-center align-middle py-6 px-4 text-sm">
+                        <PhaseProgressBar phases={(Array.isArray(site.phase) ? site.phase : [site.phase]).filter(Boolean)} />
                       </TableCell>
                       <TableCell 
                         onClick={(e) => handleComplaintCellClick(site, e)}
@@ -534,12 +563,25 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="align-middle p-4 pl-6 text-sm text-slate-600">
+                      <TableCell
+                        onClick={(e) => handleComplaintCellClick(site, e)}
+                        className="border-r align-middle p-4 pl-6 text-sm text-slate-800 cursor-pointer hover:bg-slate-100 transition-colors"
+                      >
                         <div className="flex items-center justify-between gap-4">
-                          <span className="leading-relaxed max-w-[400px] whitespace-pre-wrap break-words">
+                          <span className="leading-relaxed max-w-[400px] whitespace-pre-wrap break-words font-semibold">
                             {site.mainContent || '-'}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center align-middle p-4">
+                        <button
+                          type="button"
+                          onClick={() => handleRowClick(site)}
+                          className="inline-flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors"
+                          title="민원 지도 보기"
+                        >
+                          <Map className="h-5 w-5" />
+                        </button>
                       </TableCell>
                     </TableRow>
 
@@ -547,7 +589,7 @@ export default function StatusTable({ data, isLoading }: StatusTableProps) {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-20 text-center">
+                  <TableCell colSpan={6} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <SearchX className="h-12 w-12 text-slate-300 mb-4" />
                       <p className="text-slate-600 font-bold text-lg">등록된 현장 정보가 없습니다.</p>

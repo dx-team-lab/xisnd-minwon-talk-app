@@ -1,7 +1,7 @@
 'use client';
 
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { useState } from 'react';
 import Header from '@/components/common/Header';
 import InquiryModal from '@/components/references/InquiryModal';
@@ -55,15 +55,26 @@ export default function ReferencesPage() {
   const db = useFirestore();
   const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
   
+  const referencesCollRef = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'references'), orderBy('createdAt', 'desc'));
+  }, [db]);
+
+  const { data: referencesColl, isLoading: isCollLoading } = useCollection(referencesCollRef);
+
   const settingsRef = useMemoFirebase(() => {
     if (!db) return null;
     return doc(db, 'settings', 'references');
   }, [db]);
 
-  const { data: references, isLoading } = useDoc(settingsRef);
+  const { data: settingsData, isLoading: isDocLoading } = useDoc(settingsRef);
 
-  const categories = references?.documents || DEFAULT_CATEGORIES;
-  const sites = references?.sites || [];
+  const categories = referencesColl && referencesColl.length > 0 
+    ? referencesColl 
+    : (settingsData?.documents || DEFAULT_CATEGORIES);
+  const sites = settingsData?.sites || [];
+
+  const isLoading = isCollLoading || isDocLoading;
 
   if (isLoading) {
     return (
@@ -87,57 +98,66 @@ export default function ReferencesPage() {
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-10 items-start">
-          {/* Main Area: Document Cards */}
-          <div className="flex-[5] grid grid-cols-1 md:grid-cols-2 gap-6">
-            {categories.map((cat: DocumentCategory) => (
-              <Card key={cat.id} className="group border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-[32px] overflow-hidden bg-white flex flex-col h-full transform hover:-translate-y-1">
-                <CardContent className="p-8 flex flex-col h-full">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="h-14 w-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                      <FileText className="h-7 w-7" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 leading-tight break-keep">
-                      {cat.title}
-                    </h3>
-                  </div>
-
-                  <div className="space-y-4 flex-grow mb-8">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">언제 사용?</p>
-                      <p className="text-sm font-semibold text-slate-600 leading-relaxed border-l-2 border-slate-100 pl-3 break-keep">{cat.when}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">누가 작성?</p>
-                      <p className="text-sm font-semibold text-slate-600 leading-relaxed border-l-2 border-slate-100 pl-3 break-keep">{cat.who}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">중요한 이유?</p>
-                      <p className="text-sm font-semibold text-slate-600 leading-relaxed border-l-2 border-slate-100 pl-3 break-keep">{cat.why}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4 border-t border-slate-50">
-                    <ReferenceButton 
-                      title="다운로드" 
-                      icon={<Download className="h-4 w-4 mr-2" />} 
-                      files={cat.forms} 
-                      primary
-                    />
-                    <ReferenceButton 
-                      title="작성 예시" 
-                      icon={<Eye className="h-4 w-4 mr-2" />} 
-                      files={cat.examples} 
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        <div className="flex flex-col xl:flex-row gap-8 items-start">
+          {/* Main Area: Document Table */}
+          <div className="flex-grow w-full overflow-hidden">
+            <Card className="border-none shadow-sm rounded-3xl overflow-hidden bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-slate-200">
+                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700 min-w-[220px] whitespace-nowrap">구 분</th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700 min-w-[180px]">언제 사용하나요?</th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700 min-w-[180px] whitespace-nowrap">누가 작성하나요?</th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700 min-w-[200px]">해당 문서는 왜 작성하나요?</th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700 min-w-[200px] whitespace-nowrap">다운로드</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {categories.map((cat: DocumentCategory) => (
+                      <tr key={cat.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-5 text-center whitespace-nowrap">
+                          <span className="text-sm font-bold text-slate-800">
+                            {cat.title}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-center text-sm font-medium text-slate-600 break-keep">
+                          {cat.when}
+                        </td>
+                        <td className="px-6 py-5 text-center whitespace-nowrap">
+                          <span className="text-xs font-bold text-slate-500">
+                            {cat.who}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-center text-sm font-medium text-slate-600 break-keep">
+                          {cat.why}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <ReferenceButton 
+                              title="다운로드" 
+                              icon={<Download className="h-3.5 w-3.5 mr-1.5" />} 
+                              files={cat.forms} 
+                              primary
+                            />
+                            <ReferenceButton 
+                              title="작성 예시" 
+                              icon={<Eye className="h-3.5 w-3.5 mr-1.5" />} 
+                              files={cat.examples} 
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           </div>
 
           {/* Sidebar Area: Site References */}
-          <aside className="flex-[2] w-full lg:min-w-[340px] space-y-6 lg:sticky lg:top-28">
-            <Card className="border-none shadow-sm rounded-[32px] bg-white overflow-hidden">
+          <aside className="w-full xl:w-[340px] space-y-6 shrink-0">
+            <Card className="border-none shadow-sm rounded-3xl bg-white overflow-hidden">
               <div className="bg-primary p-6 text-white">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -150,21 +170,21 @@ export default function ReferencesPage() {
                 </div>
               </div>
               <CardContent className="p-6">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {sites.map((site: SiteReference) => (
                     <a
                       key={site.id}
                       href={site.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between p-4 rounded-2xl border-2 border-slate-50 hover:border-primary/20 hover:bg-primary/5 transition-all group"
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 hover:border-primary/20 hover:bg-primary/5 transition-all group"
                     >
-                      <span className="font-bold text-slate-700 group-hover:text-primary transition-colors break-keep">{site.title}</span>
+                      <span className="font-bold text-sm text-slate-700 group-hover:text-primary transition-colors break-keep">{site.title}</span>
                       <ExternalLink className="h-4 w-4 text-slate-300 group-hover:text-primary/50 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all flex-shrink-0 ml-2" />
                     </a>
                   ))}
                   {sites.length === 0 && (
-                    <div className="text-center py-12 text-slate-300">
+                    <div className="text-center py-8 text-slate-300">
                       <p className="text-sm">등록된 사이트가 없습니다.</p>
                     </div>
                   )}
@@ -172,14 +192,14 @@ export default function ReferencesPage() {
               </CardContent>
             </Card>
 
-            <div className="p-8 rounded-[32px] bg-indigo-600 text-white space-y-4 shadow-lg shadow-indigo-200">
+            <div className="p-7 rounded-3xl bg-indigo-600 text-white space-y-4 shadow-lg shadow-indigo-100">
               <h4 className="font-bold text-lg leading-snug">도움이 필요하신가요?</h4>
               <p className="text-sm text-indigo-100 leading-relaxed">
                 자료를 찾을 수 없거나 새로운 양식이 필요하다면 구매팀으로 문의해 주세요.
               </p>
               <Button 
                 variant="secondary" 
-                className="w-full rounded-xl font-bold bg-white text-indigo-600 hover:bg-slate-50 border-none"
+                className="w-full rounded-xl font-bold bg-white text-indigo-600 hover:bg-slate-50 border-none transition-all hover:scale-[1.02]"
                 onClick={() => setIsInquiryModalOpen(true)}
               >
                 구매팀으로 문의하기
@@ -272,8 +292,9 @@ function ReferenceButton({
     return (
       <Button
         variant="outline"
+        size="sm"
         onClick={handleClick}
-        className="flex-1 h-12 rounded-2xl font-bold border-2 border-slate-100 text-slate-300 cursor-not-allowed"
+        className="flex-1 h-9 rounded-lg font-bold border-2 border-slate-100 text-slate-300 cursor-not-allowed text-xs"
       >
         {icon}{title}
       </Button>
@@ -285,12 +306,13 @@ function ReferenceButton({
     return (
       <Button
         variant="outline"
+        size="sm"
         asChild
         className={cn(
-          "flex-1 h-12 rounded-2xl font-bold border-2 transition-all",
+          "flex-1 h-9 rounded-lg font-bold border transition-all text-xs",
           primary 
-            ? "border-primary/10 text-primary hover:bg-primary hover:text-white hover:border-primary"
-            : "border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+            ? "border-primary/20 text-primary hover:bg-primary hover:text-white hover:border-primary"
+            : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
         )}
       >
         <a href={availableFiles[0].url} target="_blank" rel="noopener noreferrer">
@@ -306,15 +328,16 @@ function ReferenceButton({
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
+          size="sm"
           className={cn(
-            "flex-1 h-12 rounded-2xl font-bold border-2 transition-all",
+            "flex-1 h-9 rounded-lg font-bold border transition-all text-xs",
             primary 
-              ? "border-primary/10 text-primary hover:bg-primary hover:text-white hover:border-primary"
-              : "border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+              ? "border-primary/20 text-primary hover:bg-primary hover:text-white hover:border-primary"
+              : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
           )}
         >
           {icon}{title}
-          <ChevronDown className="h-3 w-3 ml-2 opacity-50" />
+          <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 min-w-[320px] rounded-2xl p-2 shadow-xl border-slate-100 overflow-hidden">

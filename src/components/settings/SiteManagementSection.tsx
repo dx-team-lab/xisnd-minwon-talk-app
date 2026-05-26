@@ -21,10 +21,7 @@ import { logActivity } from '@/lib/activity-logs';
 import { useDoc } from '@/firebase';
 
 
-const REGION_OPTIONS = [
-  '서울', '경기도', '인천', '대전', '대구', '부산', '울산', '광주', '세종', 
-  '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주도'
-];
+
 
 const PHASE_OPTIONS = ['착공전', '토공', '골조', '마감', '준공'];
 const REGION_TYPE_OPTIONS = ['주거', '상업', '공업', '민감'];
@@ -44,7 +41,6 @@ export default function SiteManagementSection() {
 
 
   const [formData, setFormData] = useState<Partial<Site>>({
-    region: '',
     regionType: '주거',
     siteName: '',
     phase: [],
@@ -80,7 +76,6 @@ export default function SiteManagementSection() {
 
   const handleReset = () => {
     setFormData({
-      region: '',
       regionType: '주거',
       siteName: '',
       phase: [],
@@ -154,9 +149,9 @@ export default function SiteManagementSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { region, siteName, phase, completedCount = 0, inProgressCount = 0 } = formData;
+    const { siteName, phase, completedCount = 0, inProgressCount = 0 } = formData;
 
-    if (!region || !siteName || !phase || (Array.isArray(phase) && phase.length === 0)) {
+    if (!siteName || !phase || (Array.isArray(phase) && phase.length === 0)) {
       toast({ title: "입력 오류", description: "필수 항목을 모두 입력해 주세요.", variant: "destructive" });
       return;
     }
@@ -322,7 +317,6 @@ export default function SiteManagementSection() {
 
   const handleEdit = async (site: Site) => {
     setFormData({
-      region: site.region,
       regionType: site.regionType,
       siteName: site.siteName,
       phase: site.phase,
@@ -406,17 +400,7 @@ export default function SiteManagementSection() {
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">지역 *</label>
-                <Select value={formData.region} onValueChange={(val) => handleInputChange('region', val)}>
-                  <SelectTrigger><SelectValue placeholder="지역 선택" /></SelectTrigger>
-                  <SelectContent>
-                    {REGION_OPTIONS.map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-600">지역 유형 *</label>

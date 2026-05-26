@@ -31,6 +31,13 @@ export default function Header() {
 
   const { data: userProfile } = useDoc(userProfileRef);
 
+  const systemSettingsRef = useMemoFirebase(() => {
+    if (!db) return null;
+    return doc(db, 'settings', 'system');
+  }, [db]);
+
+  const { data: systemSettings } = useDoc(systemSettingsRef);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -41,9 +48,11 @@ export default function Header() {
   };
 
   const navItems = [
-    { name: '민원 현황', href: '/dashboard/status' },
-    { name: '민원 대응 절차', href: '/dashboard/process' },
-    { name: '대응 방안/유사 사례', href: '/dashboard/guides' },
+    { name: '민원 진행 현황', href: '/dashboard/status' },
+    ...(systemSettings?.isProcessMenuEnabled 
+        ? [{ name: '민원 대응 절차', href: '/dashboard/process' }] 
+        : []),
+    { name: '유사사례', href: '/dashboard/guides' },
     { name: '참고자료', href: '/dashboard/references' },
   ];
 

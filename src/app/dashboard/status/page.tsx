@@ -41,7 +41,7 @@ export default function StatusPage() {
       <Header />
       <main className="container mx-auto px-4 py-8 space-y-8">
         <div>
-          <h1 className="text-2xl font-headline font-bold text-slate-900">민원 현황</h1>
+          <h1 className="text-2xl font-headline font-bold text-slate-900">민원 진행 현황</h1>
           <p className="text-slate-500 text-sm mt-1.5">발생 민원에 대한 경과 내용, 대응 방안, 유사 사례를 확인합니다.</p>
         </div>
 

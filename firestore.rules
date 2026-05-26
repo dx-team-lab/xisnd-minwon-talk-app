@@ -24,6 +24,17 @@ service cloud.firestore {
       );
     }
 
+    // ✅ 기존 규칙 (유지)
+    match /{path=**}/siteImages/{imageId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isManager();
+    }
+    
+    match /{path=**}/complaints/{complaintId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isManager();
+    }
+
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
@@ -38,7 +49,7 @@ service cloud.firestore {
 
     match /roles_manager/{managerId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isManager();
+      allow write: if isAdmin() || isManager(); 
     }
 
     match /responseGuides/{docId} {
@@ -66,17 +77,22 @@ service cloud.firestore {
       allow write: if isAdmin() || isManager();
     }
 
+    match /references/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isManager();
+    }
+
     match /activity_logs/{logId} {
       allow read: if isAdmin();
       allow create: if isAdmin() || isManager();
-      allow update, delete: if false;
+      allow update, delete: if false; 
     }
 
-    match /inquiries/{document} {
-      allow create: if request.auth != null;
-      allow read: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.userId);
+    // 🌟 문의(inquiries) 규칙 - 단순화 버전
+    match /inquiries/{inquiryId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin() || isManager() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin();
     }
   }
 }
-

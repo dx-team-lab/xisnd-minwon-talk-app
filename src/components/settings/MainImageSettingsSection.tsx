@@ -13,6 +13,8 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { UserProfile } from '@/lib/types';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Palette, Layers } from 'lucide-react';
 
 export default function MainImageSettingsSection() {
   const db = useFirestore();
@@ -27,6 +29,7 @@ export default function MainImageSettingsSection() {
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [isThemeUpdating, setIsThemeUpdating] = useState(false);
 
   const settingsRef = useMemoFirebase(() => {
     if (!db) return null;
@@ -141,6 +144,44 @@ export default function MainImageSettingsSection() {
     }
   };
 
+  const handleThemeChange = async (newTheme: string) => {
+    if (!db || !user || isThemeUpdating) return;
+
+    setIsThemeUpdating(true);
+    const oldTheme = settings?.mainPageTheme || 'typeA';
+
+    try {
+      await setDoc(doc(db, 'settings', 'system'), {
+        mainPageTheme: newTheme,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+      await logActivity(db, {
+        actorEmail: user.email || '',
+        actorName: actorName,
+        action: 'UPDATE',
+        targetSiteName: '시스템 설정',
+        targetId: 'main_page_theme',
+        details: `메인 화면 디자인 타입 변경 (Type ${oldTheme === 'typeA' ? 'A' : 'B'} -> Type ${newTheme === 'typeA' ? 'A' : 'B'})`
+      });
+
+      toast({
+        title: '디자인 테마 변경 완료',
+        description: `메인 화면이 Type ${newTheme === 'typeA' ? 'A' : 'B'} 디자인으로 변경되었습니다.`
+      });
+    } catch (error: any) {
+      console.error("Theme update error:", error);
+      toast({
+        title: '테마 변경 실패',
+        description: error.message || '알 수 없는 오류가 발생했습니다.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsThemeUpdating(false);
+    }
+  };
+
   if (isSettingsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -152,6 +193,7 @@ export default function MainImageSettingsSection() {
   const currentImageUrl = settings?.mainImageUrl;
 
   return (
+    <>
     <Card className="border-none shadow-md bg-white rounded-2xl overflow-hidden">
       <CardHeader className="bg-slate-50/50 border-b">
         <div className="flex items-center gap-3">
@@ -287,5 +329,78 @@ export default function MainImageSettingsSection() {
         </div>
       </CardContent>
     </Card>
+
+    <Card className="border-none shadow-md bg-white rounded-2xl overflow-hidden mt-8">
+      <CardHeader className="bg-slate-50/50 border-b">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Palette className="h-5 w-5" />
+          </div>
+          <div>
+            <CardTitle className="text-xl font-bold">메인 화면 디자인 설정</CardTitle>
+            <CardDescription>홈 화면에 적용될 전체 디자인 테마를 선택합니다.</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-8">
+        <RadioGroup 
+          defaultValue={settings?.mainPageTheme || 'typeA'} 
+          value={settings?.mainPageTheme || 'typeA'}
+          onValueChange={handleThemeChange}
+          disabled={isThemeUpdating}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          <div className="relative">
+            <RadioGroupItem value="typeA" id="typeA" className="peer sr-only" />
+            <Label
+              htmlFor="typeA"
+              className={cn(
+                "flex flex-col items-center justify-between rounded-2xl border-2 border-slate-100 bg-white p-6 hover:bg-slate-50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all h-full",
+                isThemeUpdating && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-white transition-colors">
+                  <ImageIcon className="h-6 w-6" />
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold">기존 디자인 (Type A)</div>
+                  <p className="text-sm text-slate-500 mt-1">심플한 이미지 중심의 대시보드 형태입니다.</p>
+                </div>
+              </div>
+            </Label>
+          </div>
+
+          <div className="relative">
+            <RadioGroupItem value="typeB" id="typeB" className="peer sr-only" />
+            <Label
+              htmlFor="typeB"
+              className={cn(
+                "flex flex-col items-center justify-between rounded-2xl border-2 border-slate-100 bg-white p-6 hover:bg-slate-50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all h-full",
+                isThemeUpdating && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-white transition-colors">
+                  <Layers className="h-6 w-6" />
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold">신규 디자인 (Type B)</div>
+                  <p className="text-sm text-slate-500 mt-1">세련된 그래픽과 동적 요소가 포함된 개편안입니다.</p>
+                </div>
+              </div>
+            </Label>
+          </div>
+        </RadioGroup>
+        
+        {isThemeUpdating && (
+          <div className="mt-6 flex items-center justify-center gap-2 text-primary font-medium">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            설정을 적용 중입니다...
+          </div>
+        )}
+      </CardContent>
+    </Card>
+    </>
   );
 }

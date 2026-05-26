@@ -6,6 +6,8 @@ import { doc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { logActivity } from '@/lib/activity-logs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Loader2, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
@@ -23,12 +25,14 @@ export default function ResponseProcedureSection() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const procedureDocRef = useMemoFirebase(() => doc(db, 'settings', 'procedure'), [db]);
+  const systemSettingsRef = useMemoFirebase(() => doc(db, 'settings', 'system'), [db]);
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, 'users', user.uid);
   }, [db, user]);
 
   const { data: procedureData, isLoading } = useDoc(procedureDocRef);
+  const { data: systemSettings, isLoading: isSystemLoading } = useDoc(systemSettingsRef);
   const { data: userProfile } = useDoc(userProfileRef);
 
   // Image Processing Utility
@@ -181,7 +185,35 @@ export default function ResponseProcedureSection() {
     }
   };
 
-  if (isLoading) {
+  const handleToggleMenu = async (checked: boolean) => {
+    if (!systemSettingsRef) return;
+    try {
+      await setDoc(systemSettingsRef, {
+        isProcessMenuEnabled: checked,
+        updatedAt: new Date().toISOString(),
+        updatedBy: user?.uid || 'system'
+      }, { merge: true });
+
+      toast({ title: "설정 변경", description: `민원 대응 절차 메뉴가 ${checked ? '활성화' : '비활성화'}되었습니다.` });
+
+      if (user) {
+        const actorName = (userProfile as UserProfile)?.name || user.displayName || user.email?.split('@')[0] || 'Unknown';
+        await logActivity(db, {
+          actorEmail: user.email || '',
+          actorName: actorName,
+          action: 'UPDATE',
+          targetSiteName: '대응 절차',
+          targetId: 'system_settings',
+          details: `시스템 설정 변경: 민원 대응 절차 메뉴 (${checked ? '활성화' : '비활성화'})`
+        });
+      }
+    } catch (error: any) {
+      console.error("Toggle error:", error);
+      toast({ title: "설정 변경 실패", description: error.message || "설정 변경 중 오류가 발생했습니다.", variant: "destructive" });
+    }
+  };
+
+  if (isLoading || isSystemLoading) {
     return (
       <div className="flex justify-center p-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -195,6 +227,29 @@ export default function ResponseProcedureSection() {
 
   return (
     <div className="space-y-6">
+      <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden mb-6">
+        <CardHeader className="border-b bg-white py-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-xl font-headline flex items-center gap-2">
+            <div className="h-5 w-1 bg-accent rounded-full" />
+            메뉴 노출 설정
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            <Label htmlFor="menu-toggle" className="text-sm font-medium text-slate-600">
+              {systemSettings?.isProcessMenuEnabled ? '활성화' : '비활성화'}
+            </Label>
+            <Switch 
+              id="menu-toggle" 
+              checked={systemSettings?.isProcessMenuEnabled || false} 
+              onCheckedChange={handleToggleMenu}
+              disabled={isSystemLoading}
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 bg-slate-50 text-sm text-slate-500">
+          이 설정이 활성화되면 글로벌 네비게이션 바(GNB)에 '민원 대응 절차' 탭이 노출됩니다.
+        </CardContent>
+      </Card>
+
       <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden">
         <CardHeader className="border-b bg-white py-4 flex flex-row items-center justify-between">
           <CardTitle className="text-xl font-headline flex items-center gap-2">
