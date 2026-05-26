@@ -4,6 +4,10 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Image from 'next/image';
 
+import card1Img from '../../../public/card1.png';
+import card2Img from '../../../public/card2.png';
+import card3Img from '../../../public/card3.png';
+
 export default function HomeTypeB() {
   const router = useRouter();
 
@@ -11,21 +15,21 @@ export default function HomeTypeB() {
     {
       title: "민원 진행 현황",
       description: "접수부터 종결까지 한눈에",
-      imgSrc: "/card1.png",
+      imgSrc: card1Img,
       href: "/dashboard/status",
       bgColor: "bg-[#F9F9F8]", // Assuming backgrounds are part of images or we just use white/gray
     },
     {
       title: "유사사례",
       description: "당사 사례, 분쟁조정위원회 사례등",
-      imgSrc: "/card2.png",
+      imgSrc: card2Img,
       href: "/dashboard/guides",
       bgColor: "bg-[#F9F9F8]",
     },
     {
       title: "참고자료",
       description: "관련 문서 서식, 주요 기관Link",
-      imgSrc: "/card3.png",
+      imgSrc: card3Img,
       href: "/dashboard/references",
       bgColor: "bg-[#F9F9F8]",
     }
