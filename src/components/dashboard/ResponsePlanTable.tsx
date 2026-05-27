@@ -95,30 +95,29 @@ export default function ResponsePlanTable({ data, isLoading }: ResponsePlanTable
             <TableHeader className="bg-slate-50 border-b">
               <TableRow>
                 <TableHead className="h-10 font-bold border-r text-slate-700 text-center w-[180px] text-xs whitespace-nowrap">구 분</TableHead>
-                <TableHead className="h-10 font-bold text-slate-700 text-xs min-w-[250px]">주요 내용</TableHead>
+                <TableHead className="h-10 font-bold text-slate-700 text-center text-xs min-w-[250px]">주요 내용</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayData.length > 0 ? (
                 displayData.map((row, idx) => (
-                  <TableRow key={row.id || idx} className="hover:bg-slate-50/50 transition-colors">
-                    <TableCell className="border-r text-center align-top px-2 py-3 text-xs font-medium text-slate-700 whitespace-nowrap">
+                  <TableRow
+                    key={row.id || idx}
+                    className={cn(
+                      "transition-colors",
+                      row.sharePointUrl && "cursor-pointer hover:bg-slate-50"
+                    )}
+                    onClick={() => {
+                      if (row.sharePointUrl) {
+                        window.open(row.sharePointUrl, '_blank');
+                      }
+                    }}
+                  >
+                    <TableCell className="border-r text-left align-top px-4 py-3 text-xs font-bold text-slate-700 whitespace-nowrap">
                       {row.category}
                     </TableCell>
-                    <TableCell className="align-top px-2 py-3 text-xs leading-relaxed text-slate-600">
-                      <div className="flex flex-col gap-1">
-                        <span className="whitespace-pre-wrap">{row.content}</span>
-                        {row.sharePointUrl && (
-                          <a
-                            href={row.sharePointUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline flex items-center gap-0.5 text-xs font-semibold mt-1 w-fit"
-                          >
-                            [문서 보기] <ExternalLink className="h-3 w-3" />
-                          </a>
-                        )}
-                      </div>
+                    <TableCell className="text-left align-top px-4 py-3 text-xs font-bold leading-relaxed text-slate-600 whitespace-pre-wrap">
+                      {row.content}
                     </TableCell>
                   </TableRow>
                 ))

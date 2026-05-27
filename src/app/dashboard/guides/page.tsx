@@ -123,6 +123,19 @@ export default function GuidesPage() {
     });
   }, [rawCases, filters, searchKeyword]);
 
+  // Filter Logic for Response Plans V2 (Reacts only to search keyword)
+  const filteredPlansV2 = useMemo(() => {
+    if (!rawPlansV2) return [];
+    if (!searchKeyword) return rawPlansV2;
+
+    const kw = searchKeyword.toLowerCase();
+    return rawPlansV2.filter(p => {
+      const matchCategory = (p.category || '').toLowerCase().includes(kw);
+      const matchContent = (p.content || '').toLowerCase().includes(kw);
+      return matchCategory || matchContent;
+    });
+  }, [rawPlansV2, searchKeyword]);
+
   const handleDownload = () => {
     if (!filteredGuides || !filteredCases) {
       alert('다운로드할 데이터가 없습니다.');
@@ -230,6 +243,7 @@ export default function GuidesPage() {
           onReset={resetFilters}
           guideCount={filteredGuides.length}
           caseCount={filteredCases.length}
+          planCount={filteredPlansV2.length}
           searchKeyword={searchKeyword}
           onSearchChange={setSearchKeyword}
           onDownload={handleDownload}
@@ -243,7 +257,7 @@ export default function GuidesPage() {
           </div>
           <div className="xl:col-span-2">
             <ResponsePlanTable
-              data={rawPlansV2}
+              data={filteredPlansV2}
               isLoading={isPlansV2Loading}
             />
           </div>

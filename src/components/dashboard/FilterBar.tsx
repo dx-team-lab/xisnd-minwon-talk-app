@@ -19,21 +19,23 @@ interface FilterBarProps {
   onReset: () => void;
   guideCount: number;
   caseCount: number;
+  planCount: number;
   searchKeyword: string;
   onSearchChange: (val: string) => void;
   onDownload?: () => void;
 }
 
-export default function FilterBar({ 
-  filters, 
-  onFilterChange, 
-  onRemoveFilter, 
-  onReset, 
-  guideCount, 
-  caseCount, 
-  searchKeyword, 
-  onSearchChange, 
-  onDownload 
+export default function FilterBar({
+  filters,
+  onFilterChange,
+  onRemoveFilter,
+  onReset,
+  guideCount,
+  caseCount,
+  planCount,
+  searchKeyword,
+  onSearchChange,
+  onDownload
 }: FilterBarProps) {
   const [resetKey, setResetKey] = useState(0);
 
@@ -120,8 +122,8 @@ export default function FilterBar({
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold">
                 검색결과 <span className="text-slate-300 mx-2">|</span>
-                대응 방안: <span className="text-primary">{guideCount}건</span> <span className="text-slate-300 mx-2">|</span>
-                유사 사례: <span className="text-primary">{caseCount}건</span>
+                유사 사례: <span className="text-primary">{caseCount}건</span> <span className="text-slate-300 mx-2">|</span>
+                대응 방안: <span className="text-primary">{planCount}건</span>
               </span>
             </div>
           </div>
