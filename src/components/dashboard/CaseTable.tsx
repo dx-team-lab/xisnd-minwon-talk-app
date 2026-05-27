@@ -90,95 +90,51 @@ export default function CaseTable({ data, isLoading }: CaseTableProps) {
           <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : (
           <div className="overflow-x-auto">
-            <Table className="min-w-[1000px]">
+            <Table className="w-full">
               <TableHeader className="bg-slate-50 border-b">
                 <TableRow>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[80px] border-r text-xs whitespace-nowrap">지역</TableHead>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[80px] border-r text-xs whitespace-nowrap">단계</TableHead>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[100px] border-r text-xs whitespace-nowrap">유형</TableHead>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[100px] border-r text-xs whitespace-nowrap">민원인</TableHead>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[120px] border-r text-xs whitespace-nowrap">요구사항</TableHead>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[80px] border-r text-xs whitespace-nowrap">진행경과</TableHead>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[90px] border-r text-xs whitespace-nowrap">보상방식</TableHead>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[110px] border-r text-xs whitespace-nowrap">보상금액(원)</TableHead>
-                  <TableHead className="h-10 font-bold text-slate-700 text-center w-[110px] text-xs whitespace-nowrap">상세내용</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center border-r text-xs">민원 내용</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-20 border-r text-xs whitespace-nowrap">발생시점</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-24 border-r text-xs whitespace-nowrap">유형</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-20 border-r text-xs whitespace-nowrap">신청인</TableHead>
+                  <TableHead className="h-10 font-bold text-slate-700 text-center w-24 text-xs whitespace-nowrap">보상금액</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {slicedData.length > 0 ? (
                   slicedData.map((item, idx) => (
-                    <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs whitespace-nowrap">
-                        <CategoryBadge category="region">{item.region}</CategoryBadge>
+                    <TableRow
+                      key={idx}
+                      className={cn(
+                        "transition-colors",
+                        item.details?.startsWith('http') && "cursor-pointer hover:bg-slate-50"
+                      )}
+                      onClick={() => {
+                        if (item.details?.startsWith('http')) {
+                          window.open(item.details, '_blank');
+                        }
+                      }}
+                    >
+                      <TableCell className="border-r align-top px-2 py-3 text-xs text-slate-600 leading-relaxed text-left whitespace-normal font-semibold">
+                        {item.complaintContent}
                       </TableCell>
-                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs whitespace-nowrap">
-                        <CategoryBadge category="phase">{item.phase}</CategoryBadge>
+                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs whitespace-nowrap font-semibold">
+                        {item.phase}
                       </TableCell>
-                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs whitespace-nowrap">
-                        <div className="flex flex-wrap justify-center gap-1.5">
-                          {Array.isArray(item.type) ? item.type.map((t: string) => (
-                            <CategoryBadge key={t} category="type">{t}</CategoryBadge>
-                          )) : (
-                            <CategoryBadge category="type">{item.type}</CategoryBadge>
-                          )}
-                        </div>
+                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs whitespace-nowrap font-semibold">
+                        {Array.isArray(item.type) ? item.type.join(', ') : item.type}
                       </TableCell>
-                      <TableCell className="align-top px-2 py-3 text-xs font-bold text-slate-700 border-r text-left">
+                      <TableCell className="border-r text-center align-top px-2 py-3 text-xs font-bold text-slate-700 whitespace-nowrap">
                         {item.complainant}
                       </TableCell>
-                      <TableCell className="align-top px-2 py-3 border-r text-center text-xs">
-                        <div className="flex flex-wrap justify-center gap-1.5">
-                          {Array.isArray(item.requestContent) ? item.requestContent.map((rt: string) => (
-                            <Badge key={rt} variant="outline" className="bg-rose-50 text-rose-600 border-none rounded-full text-xs font-bold px-2 py-0.5">
-                              {rt}
-                            </Badge>
-                          )) : (
-                            <Badge variant="outline" className="bg-rose-50 text-rose-600 border-none rounded-full text-xs font-bold px-2 py-0.5">
-                              {item.requestContent}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-top px-2 py-3 text-center border-r text-xs">
-                        <Badge 
-                          variant="outline" 
-                          className={cn(
-                            "text-xs font-bold border-none rounded-full px-2 py-0.5 whitespace-nowrap",
-                            item.progress === '종결' ? "bg-slate-100 text-slate-600" :
-                            item.progress === '진행' ? "bg-blue-50 text-blue-600" :
-                            "bg-amber-50 text-amber-600"
-                          )}
-                        >
-                          {item.progress}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="align-top px-2 py-3 border-r text-center text-xs">
-                        <Badge variant="outline" className="bg-teal-50 text-teal-600 border-none rounded-full text-xs font-bold px-2 py-0.5 whitespace-nowrap">
-                          {item.compensationMethod}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="align-top px-2 py-3 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap text-xs border-r">
+                      <TableCell className="text-right align-top px-2 py-3 pr-4 text-xs font-semibold text-slate-900 tabular-nums whitespace-nowrap">
                         {item.compensationAmount?.toLocaleString() || '-'}
-                      </TableCell>
-                      <TableCell className="align-top px-2 py-3 text-xs text-slate-600 leading-relaxed max-w-[120px] text-center">
-                        {item.details?.startsWith('http') ? (
-                          <a 
-                            href={item.details} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-blue-600 hover:underline flex items-center justify-center gap-0.5 shrink-0 text-sm font-semibold mt-0.5"
-                          >
-                            [문서 보기] <ExternalLink className="h-3 w-3" />
-                          </a>
-                        ) : (
-                          item.details
-                        )}
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={12} className="py-20 text-center">
+                    <TableCell colSpan={5} className="py-20 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <SearchX className="h-12 w-12 text-slate-300 mb-4" />
                         <p className="text-slate-600 font-medium">검색 조건에 맞는 데이터가 없습니다.</p>

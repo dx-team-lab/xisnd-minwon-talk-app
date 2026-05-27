@@ -123,18 +123,36 @@ export default function GuidesPage() {
     });
   }, [rawCases, filters, searchKeyword]);
 
-  // Filter Logic for Response Plans V2 (Reacts only to search keyword)
+  // Filter Logic for Response Plans V2 (Reacts to search keyword and region/stage/type filters)
   const filteredPlansV2 = useMemo(() => {
     if (!rawPlansV2) return [];
-    if (!searchKeyword) return rawPlansV2;
 
-    const kw = searchKeyword.toLowerCase();
     return rawPlansV2.filter(p => {
-      const matchCategory = (p.category || '').toLowerCase().includes(kw);
-      const matchContent = (p.content || '').toLowerCase().includes(kw);
-      return matchCategory || matchContent;
+      // Region filter (전체는 모든 항목을 통과)
+      const matchRegion = filters.region.length === 0 || filters.region.includes('전체') || !p.region || filters.region.includes(p.region);
+
+      // Stage filter (phase와 stage는 같은 필드)
+      const matchStage = filters.phase.length === 0 || filters.phase.includes('전체') || !p.stage || filters.phase.includes(p.stage);
+
+      // Type filter (배열 기반 필터링)
+      const matchType = filters.type.length === 0 || filters.type.includes('전체') || !p.type ||
+        (Array.isArray(p.type)
+          ? p.type.some((t: string) => filters.type.includes(t))
+          : filters.type.includes(p.type));
+
+      // Search keyword filter
+      const kw = searchKeyword.toLowerCase();
+      const typeStr = Array.isArray(p.type) ? p.type.join(' ') : (p.type || '');
+      const matchKeyword = !searchKeyword ||
+        (p.category || '').toLowerCase().includes(kw) ||
+        (p.content || '').toLowerCase().includes(kw) ||
+        (p.region || '').toLowerCase().includes(kw) ||
+        (p.stage || '').toLowerCase().includes(kw) ||
+        typeStr.toLowerCase().includes(kw);
+
+      return matchRegion && matchStage && matchType && matchKeyword;
     });
-  }, [rawPlansV2, searchKeyword]);
+  }, [rawPlansV2, filters.region, filters.phase, filters.type, searchKeyword]);
 
   const handleDownload = () => {
     if (!filteredGuides || !filteredCases) {

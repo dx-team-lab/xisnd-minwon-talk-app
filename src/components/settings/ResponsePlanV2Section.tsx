@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Trash2, Edit2, PlusCircle, RotateCcw, Save, ExternalLink, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +29,10 @@ export default function ResponsePlanV2Section() {
   const [formData, setFormData] = useState({
     category: '',
     content: '',
-    sharePointUrl: ''
+    sharePointUrl: '',
+    region: '전체',
+    stage: '전체',
+    type: [] as string[]
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -48,8 +53,17 @@ export default function ResponsePlanV2Section() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleTypeToggle = (typeValue: string) => {
+    setFormData(prev => ({
+      ...prev,
+      type: prev.type.includes(typeValue)
+        ? prev.type.filter(t => t !== typeValue)
+        : [...prev.type, typeValue]
+    }));
+  };
+
   const handleReset = () => {
-    setFormData({ category: '', content: '', sharePointUrl: '' });
+    setFormData({ category: '', content: '', sharePointUrl: '', region: '전체', stage: '전체', type: [] });
     setEditingId(null);
   };
 
@@ -63,7 +77,12 @@ export default function ResponsePlanV2Section() {
     }
 
     const payload = {
-      ...formData,
+      category: formData.category,
+      content: formData.content,
+      sharePointUrl: formData.sharePointUrl,
+      region: formData.region,
+      stage: formData.stage,
+      type: formData.type,
       updatedAt: serverTimestamp(),
       updatedBy: user?.uid
     };
@@ -101,7 +120,10 @@ export default function ResponsePlanV2Section() {
     setFormData({
       category: plan.category || '',
       content: plan.content || '',
-      sharePointUrl: plan.sharePointUrl || ''
+      sharePointUrl: plan.sharePointUrl || '',
+      region: plan.region || '전체',
+      stage: plan.stage || '전체',
+      type: Array.isArray(plan.type) ? plan.type : []
     });
     setEditingId(plan.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -153,10 +175,18 @@ export default function ResponsePlanV2Section() {
           let successCount = 0;
           for (const row of data as any[]) {
             try {
+              const typeValue = row['유형'] || row['type'] || '';
+              const typeArray = typeValue
+                ? String(typeValue).split(',').map((t: string) => t.trim()).filter((t: string) => t)
+                : [];
+
               const payload = {
                 category: String(row['구 분'] || row['구분'] || row['category'] || ''),
                 content: String(row['주요 내용'] || row['주요내용'] || row['content'] || ''),
                 sharePointUrl: String(row['문서 링크'] || row['문서링크'] || row['sharePointUrl'] || row['url'] || ''),
+                region: String(row['지역/지구'] || row['지역'] || row['region'] || '전체'),
+                stage: String(row['단계'] || row['stage'] || '전체'),
+                type: typeArray.length > 0 ? typeArray : [],
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 createdBy: user?.uid || 'system'
@@ -215,7 +245,10 @@ export default function ResponsePlanV2Section() {
       const excelData = plans.map(p => ({
         '구 분': p.category || '',
         '주요 내용': p.content || '',
-        '문서 링크': p.sharePointUrl || ''
+        '문서 링크': p.sharePointUrl || '',
+        '지역/지구': p.region || '',
+        '단계': p.stage || '',
+        '유형': Array.isArray(p.type) ? p.type.join(', ') : p.type || ''
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -316,7 +349,7 @@ export default function ResponsePlanV2Section() {
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-600">구 분 *</label>
                 <Input
@@ -325,7 +358,7 @@ export default function ResponsePlanV2Section() {
                   onChange={(e) => handleInputChange('category', e.target.value)}
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-600">문서 링크 (선택)</label>
                 <Input
                   placeholder="SharePoint URL을 입력하세요 (선택 사항)"
@@ -333,6 +366,57 @@ export default function ResponsePlanV2Section() {
                   onChange={(e) => handleInputChange('sharePointUrl', e.target.value)}
                   type="url"
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">지역/지구</label>
+                <Select value={formData.region} onValueChange={(val) => handleInputChange('region', val)}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="전체">전체</SelectItem>
+                    <SelectItem value="공업">공업</SelectItem>
+                    <SelectItem value="주거">주거</SelectItem>
+                    <SelectItem value="민감">민감</SelectItem>
+                    <SelectItem value="상업">상업</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">단계</label>
+                <Select value={formData.stage} onValueChange={(val) => handleInputChange('stage', val)}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="전체">전체</SelectItem>
+                    <SelectItem value="착공전(철거)">착공전(철거)</SelectItem>
+                    <SelectItem value="토공">토공</SelectItem>
+                    <SelectItem value="골조">골조</SelectItem>
+                    <SelectItem value="마감">마감</SelectItem>
+                    <SelectItem value="준공">준공</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-3 space-y-3">
+                <label className="text-sm font-bold text-slate-600">유형 (다중 선택 가능)</label>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {['교통', '낙진', '냄새', '분진', '빛', '소음', '일반', '진동', '파손'].map((type) => (
+                    <div key={type} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`type-${type}`}
+                        checked={formData.type.includes(type)}
+                        onCheckedChange={() => handleTypeToggle(type)}
+                      />
+                      <label htmlFor={`type-${type}`} className="text-sm font-medium cursor-pointer">
+                        {type}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="space-y-2">
@@ -373,10 +457,13 @@ export default function ResponsePlanV2Section() {
             <Table className="border-collapse min-w-[600px]">
               <TableHeader className="bg-slate-50 border-b">
                 <TableRow>
-                  <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[200px] text-sm">구 분</TableHead>
-                  <TableHead className="h-12 font-bold border-r text-slate-700 text-sm min-w-[300px]">주요 내용</TableHead>
-                  <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[120px] text-sm">문서 링크</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-sm text-center w-[100px]">관리</TableHead>
+                  <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[150px] text-sm whitespace-nowrap">구 분</TableHead>
+                  <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[100px] text-sm whitespace-nowrap">지역/지구</TableHead>
+                  <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[100px] text-sm whitespace-nowrap">단계</TableHead>
+                  <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[120px] text-sm whitespace-nowrap">유형</TableHead>
+                  <TableHead className="h-12 font-bold border-r text-slate-700 text-sm min-w-[250px]">주요 내용</TableHead>
+                  <TableHead className="h-12 font-bold border-r text-slate-700 text-center w-[130px] text-sm whitespace-nowrap">문서 링크</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-sm text-center w-[90px]">관리</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -386,16 +473,25 @@ export default function ResponsePlanV2Section() {
                       <TableCell className="border-r text-center align-top p-4 text-sm font-medium text-slate-700 whitespace-nowrap">
                         {p.category}
                       </TableCell>
+                      <TableCell className="border-r text-center align-top p-4 text-sm text-slate-600 whitespace-nowrap">
+                        {p.region || '-'}
+                      </TableCell>
+                      <TableCell className="border-r text-center align-top p-4 text-sm text-slate-600 whitespace-nowrap">
+                        {p.stage || '-'}
+                      </TableCell>
+                      <TableCell className="border-r text-center align-top p-4 text-sm text-slate-600 whitespace-nowrap">
+                        {Array.isArray(p.type) && p.type.length > 0 ? p.type.join(', ') : '-'}
+                      </TableCell>
                       <TableCell className="border-r align-top p-4 text-sm leading-relaxed text-slate-600">
                         <span className="whitespace-pre-wrap">{p.content}</span>
                       </TableCell>
-                      <TableCell className="border-r align-top p-4 text-center">
+                      <TableCell className="border-r align-top p-4 text-center w-[130px] whitespace-nowrap">
                         {p.sharePointUrl ? (
                           <a
                             href={p.sharePointUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline flex items-center justify-center gap-0.5 text-sm font-semibold"
+                            className="text-blue-600 hover:underline inline-flex items-center justify-center gap-0.5 text-sm font-semibold"
                           >
                             [문서 보기] <ExternalLink className="h-3 w-3" />
                           </a>
@@ -417,7 +513,7 @@ export default function ResponsePlanV2Section() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-20 text-slate-400">
+                    <TableCell colSpan={7} className="text-center py-20 text-slate-400">
                       등록된 대응 방안(신규)이 없습니다.
                     </TableCell>
                   </TableRow>

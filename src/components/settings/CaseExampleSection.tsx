@@ -222,7 +222,7 @@ export default function CaseExampleSection() {
             const rawSiteName = row['현장명'] || '';
             const cleanSiteName = rawSiteName.replace(/^\d+\.\s*/, '').trim();
             // 5. 금액의 콤마(,) 제거 후 숫자로 변환 ("480,000" -> 480000)
-            const rawAmount = String(row['보상금액(원)'] || '0').replace(/,/g, '');
+            const rawAmount = String(row['보상금액'] || row['보상금액(원)'] || '0').replace(/,/g, '');
             const cleanAmount = Number(rawAmount) || 0;
             // 6. 요구사항/유형의 띄어쓰기 완전 제거 ("정신적 피해 보상" -> "정신적피해보상")
             const cleanRequestContent = row['요구사항']
@@ -234,10 +234,10 @@ export default function CaseExampleSection() {
             const payload = {
               siteName: cleanSiteName,
               region: mapRegion(row['지역'] || ''),
-              phase: mapPhase(row['단계'] || ''),
+              phase: mapPhase(row['발생시점'] || row['단계'] || ''),
               type: cleanType,
               complaintContent: row['민원 내용'] || '내용 없음',
-              complainant: row['민원인'] || '-',
+              complainant: row['신청인'] || row['민원인'] || '-',
               requestContent: cleanRequestContent,
               occurrenceDate: formattedDate,
               progress: row['진행경과'] || '접수',
@@ -325,15 +325,15 @@ export default function CaseExampleSection() {
       const excelData = cases.map(c => ({
         '현장명': c.siteName || '',
         '지역': c.region || '',
-        '단계': c.phase || '',
+        '발생시점': c.phase || '',
         '유형': Array.isArray(c.type) ? c.type.join(',') : (c.type || ''),
         '민원 내용': c.complaintContent || '',
-        '민원인': c.complainant || '',
+        '신청인': c.complainant || '',
         '요구사항': Array.isArray(c.requestContent) ? c.requestContent.join(',') : (c.requestContent || ''),
         '발생 일시': c.occurrenceDate || '',
         '진행경과': c.progress || '',
         '보상방식': c.compensationMethod || c.compensationStatus || '',
-        '보상금액(원)': c.compensationAmount || 0,
+        '보상금액': c.compensationAmount || 0,
         '상세내용': c.details || ''
       }));
 
@@ -474,9 +474,9 @@ export default function CaseExampleSection() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-600">단계 *</label>
+                    <label className="text-sm font-bold text-slate-600">발생시점 *</label>
                     <Select value={formData.phase} onValueChange={(val) => handleInputChange('phase', val)}>
-                      <SelectTrigger><SelectValue placeholder="단계 선택" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="발생시점 선택" /></SelectTrigger>
                       <SelectContent>
                         {FILTER_OPTIONS.phase.options.filter(o => o !== '전체').map(o => (
                           <SelectItem key={o} value={o}>{o}</SelectItem>
@@ -517,9 +517,9 @@ export default function CaseExampleSection() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-600">민원인 *</label>
+                    <label className="text-sm font-bold text-slate-600">신청인 *</label>
                     <Input
-                      placeholder="민원인 정보"
+                      placeholder="신청인 정보"
                       value={formData.complainant}
                       onChange={(e) => handleInputChange('complainant', e.target.value)}
                     />
@@ -576,7 +576,7 @@ export default function CaseExampleSection() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-600">보상금액 (원)</label>
+                  <label className="text-sm font-bold text-slate-600">보상금액</label>
                   <Input
                     type="number"
                     min="0"
@@ -628,15 +628,15 @@ export default function CaseExampleSection() {
                 <TableRow>
                   <TableHead className="h-12 font-bold text-slate-700 border-r text-sm px-4">현장명</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">지역</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">단계</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">발생시점</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-sm">유형</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 border-r text-sm px-4 min-w-[200px]">민원 내용</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center border-r text-sm w-[120px]">발생 일시</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[100px] border-r text-sm">진행</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 border-r text-sm px-4 w-[120px]">민원인</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 border-r text-sm px-4 w-[120px]">신청인</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 border-r text-sm px-4 min-w-[150px]">상세내용</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] border-r text-sm">보상방식</TableHead>
-                  <TableHead className="h-12 font-bold text-slate-700 text-right w-[140px] border-r text-sm px-4">보상금액(원)</TableHead>
+                  <TableHead className="h-12 font-bold text-slate-700 text-right w-[140px] border-r text-sm px-4">보상금액</TableHead>
                   <TableHead className="h-12 font-bold text-slate-700 text-center w-[120px] text-sm">관리</TableHead>
                 </TableRow>
               </TableHeader>
