@@ -8,7 +8,7 @@ import Header from '@/components/common/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Settings2 } from 'lucide-react';
 import ResponseGuideSection from '@/components/settings/ResponseGuideSection';
-import CaseExampleSection from '@/components/settings/CaseExampleSection';
+import CaseExampleSection from '@/components/settings/CaseExample';
 import ActionPlanLinkSection from '@/components/settings/ActionPlanLinkSection';
 import ResponseProcedureSection from '@/components/settings/ResponseProcedureSection';
 import SiteManagementSection from '@/components/settings/SiteManagementSection';

@@ -49,9 +49,9 @@ export default function Header() {
 
   const navItems = [
     { name: '민원 진행 현황', href: '/dashboard/status' },
-    ...(systemSettings?.isProcessMenuEnabled 
-        ? [{ name: '민원 대응 절차', href: '/dashboard/process' }] 
-        : []),
+    ...(systemSettings?.isProcessMenuEnabled
+      ? [{ name: '민원 대응 절차', href: '/dashboard/process' }]
+      : []),
     { name: '유사사례', href: '/dashboard/guides' },
     { name: '참고자료', href: '/dashboard/references' },
   ];
@@ -72,7 +72,7 @@ export default function Header() {
               className="h-8 w-auto object-contain"
             />
             <span className="text-xl font-extrabold tracking-tight text-slate-800">
-              민원 대응 지식 플랫폼
+              민원 대응 통합 플랫폼
             </span>
           </Link>
         </div>
@@ -135,52 +135,52 @@ export default function Header() {
 
         {/* Right: User Info & Logout */}
         <div className="flex items-center gap-4">
-            <NotificationBell />
-            {/* 내 문의 내역 버튼 제거됨 (시스템 단순화) */}
+          <NotificationBell />
+          {/* 내 문의 내역 버튼 제거됨 (시스템 단순화) */}
 
-            {isUserLoading || isRoleLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : user ? (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col items-end">
-                    <span className="text-sm font-bold text-slate-800">
-                      {userProfile?.name || userProfile?.displayName || user?.displayName || '사용자'}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      {user?.email}
-                    </span>
-                  </div>
-
-                  {isAdmin && (
-                    <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-primary/20">
-                      관리자
-                    </span>
-                  )}
-                  {isManager && !isAdmin && (
-                    <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-slate-200">
-                      매니저
-                    </span>
-                  )}
+          {isUserLoading || isRoleLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : user ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-bold text-slate-800">
+                    {userProfile?.name || userProfile?.displayName || user?.displayName || '사용자'}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {user?.email}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2 border-l pl-4 h-8">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLogout}
-                    className="h-8 w-8 rounded-full text-red-500 hover:text-red-100 hover:bg-red-50 transition-colors"
-                    title="로그아웃"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
+                {isAdmin && (
+                  <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-primary/20">
+                    관리자
+                  </span>
+                )}
+                {isManager && !isAdmin && (
+                  <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-slate-200">
+                    매니저
+                  </span>
+                )}
               </div>
-            ) : (
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/">로그인</Link>
-              </Button>
-            )}
+
+              <div className="flex items-center gap-2 border-l pl-4 h-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  className="h-8 w-8 rounded-full text-red-500 hover:text-red-100 hover:bg-red-50 transition-colors"
+                  title="로그아웃"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/">로그인</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
