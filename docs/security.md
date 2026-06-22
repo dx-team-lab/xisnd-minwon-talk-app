@@ -1,0 +1,181 @@
+# 보안 규칙 가이드
+
+> 이 문서는 Spring Boot 백엔드 도입 시 반드시 적용해야 할 보안 항목과
+> 각 항목별 **PASS 판정 기준**을 정의합니다.
+>
+> ⚠️ **중요**: 이 문서에 정의된 보안 항목은 AI 자기검증만으로 PASS를 인정하지 않습니다.
+> 반드시 개발자 검토를 받아야 합니다.
+
+---
+
+## 보안 항목 개요
+
+| # | 항목 | 현재 상태 | 전환 후 목표 |
+|---|------|-----------|-------------|
+| 1 | CORS 설정 | Firebase 기본값 (미설정) | Spring Boot에서 Origin 명시적 허용 |
+| 2 | JWT 인증 | Firebase Auth 토큰 사용 | Spring Security + JWT 필터 적용 |
+| 3 | API 접근 권한 | **현재 모두 OPEN** (인가 없음) | 역할별 접근 제어 (ADMIN / MANAGER) |
+| 4 | 트랜잭션 | Firebase 비원자적 처리 | Spring JPA @Transactional 적용 |
+| 5 | 민감정보 노출 | 보상금액·품의 링크 미통제 | 역할 기반 필드 숨김 처리 |
+
+---
+
+## 1. CORS 설정
+
+### 배경
+현재 Firebase는 CORS를 별도로 설정하지 않아도 Firebase SDK가 내부적으로 처리합니다.
+Spring Boot 전환 시 CORS를 명시적으로 설정하지 않으면 브라우저에서 API 요청이 차단됩니다.
+
+### 규칙
+- 허용할 Origin(출처)은 환경별로 명시적으로 지정한다.
+- `allowedOrigins("*")` (와일드카드 전체 허용) 는 운영 환경에서 절대 사용 금지.
+- 허용할 HTTP 메서드를 명시한다: `GET, POST, PUT, DELETE, OPTIONS`
+- 인증 헤더 전달을 위해 `allowCredentials(true)` 를 설정한다.
+
+### 환경별 허용 Origin 예시
+```
+개발(dev)   : http://localhost:3000
+스테이징    : https://staging.example.com
+운영(prod)  : https://www.example.com
+```
+
+### ✅ PASS 판정 기준 체크리스트
+- [ ] Spring Boot `WebMvcConfigurer`에 CORS 설정이 코드로 구현되어 있다.
+- [ ] `allowedOrigins("*")` 이 운영 설정에 없다.
+- [ ] 허용 Origin 목록이 `.env` 또는 외부 설정 파일로 관리된다 (코드에 하드코딩 금지).
+- [ ] OPTIONS(preflight) 요청에 대한 응답이 정상 처리된다.
+- [ ] **개발자 검토 완료** ☐
+
+---
+
+## 2. JWT 인증
+
+### 배경
+현재 Firebase Authentication 토큰을 사용합니다.
+Spring Boot 전환 후에는 자체 JWT를 발급하거나, Firebase 토큰을 Spring Security에서 검증하는 방식을 선택해야 합니다.
+
+### 규칙
+- 모든 API 요청 헤더에는 `Authorization: Bearer {JWT토큰}` 을 포함해야 한다.
+- JWT는 서버에서 서명(Signature)을 검증하며, 클라이언트 검증은 신뢰하지 않는다.
+- JWT 만료시간(expiration)을 반드시 설정한다. (권장: Access Token 1시간, Refresh Token 7일)
+- JWT Secret Key는 `.env`로 관리하며, 코드에 하드코딩 금지.
+- 토큰 탈취 위험을 줄이기 위해 `httpOnly` Cookie 또는 메모리 저장 방식을 검토한다.
+- 로그에 JWT 토큰 값을 출력하지 않는다.
+
+### ✅ PASS 판정 기준 체크리스트
+- [ ] Spring Security 필터 체인에 JWT 검증 필터가 등록되어 있다.
+- [ ] 인증 없이 접근하면 `401 Unauthorized` 응답이 반환된다.
+- [ ] 만료된 토큰으로 요청 시 `401` 응답이 반환된다.
+- [ ] JWT Secret Key가 `.env` 또는 외부 설정으로 관리된다.
+- [ ] 로그에 토큰 값이 출력되지 않는다.
+- [ ] **개발자 검토 완료** ☐
+
+---
+
+## 3. API 접근 권한 (현재 모두 OPEN — 최우선 해결 항목)
+
+### 배경
+⚠️ **현재 가장 위험한 상태**: 프론트엔드에서 역할 검사를 하지만, API 자체에는 인가(authorization) 처리가 없습니다.
+Firebase Firestore 규칙(`firestore.rules`)에서 일부 통제하고 있으나, Spring Boot 전환 후에는 Firestore 규칙이 적용되지 않으므로 반드시 서버에서 권한 검사를 해야 합니다.
+
+### 역할 정의
+| 역할 | 설명 | 현재 Firebase 구조 |
+|------|------|--------------------|
+| `ADMIN` | 모든 기능 접근 가능 | `roles_admin` 컬렉션 |
+| `MANAGER` | 조회 + 일부 쓰기 가능 | `roles_manager` 컬렉션 |
+| 미승인 사용자 | 로그인만 가능, 데이터 접근 불가 | `users.approved = false` |
+
+### 역할별 API 접근 권한 기준
+| 기능 | 비로그인 | MANAGER | ADMIN |
+|------|---------|---------|-------|
+| 데이터 조회 (사례/현장/대응방안) | ❌ | ✅ | ✅ |
+| 데이터 등록/수정/삭제 | ❌ | ✅ | ✅ |
+| 보상금액 조회 | ❌ | ⚠️ 마스킹 표시 | ✅ |
+| 품의 링크(details) 조회 | ❌ | ⚠️ 마스킹 표시 | ✅ |
+| 사용자 관리 | ❌ | ❌ | ✅ |
+| 활동 로그 조회 | ❌ | ❌ | ✅ |
+| 시스템 설정 | ❌ | ❌ | ✅ |
+
+> ⚠️ 마스킹 표시: MANAGER 역할은 보상금액과 품의 링크를 `***` 또는 `[권한 필요]`로 표시
+
+### 규칙
+- Spring Security `@PreAuthorize` 또는 `SecurityConfig`에서 역할별 접근 제어를 구현한다.
+- 프론트엔드 조건부 렌더링(if admin → show)은 편의를 위한 것이며, 보안 수단이 아니다.
+- 서버 API에서 반드시 독립적으로 권한을 검증한다.
+
+### ✅ PASS 판정 기준 체크리스트
+- [ ] 로그인 없이 API를 직접 호출하면 `401` 응답이 반환된다.
+- [ ] MANAGER 계정으로 ADMIN 전용 API 호출 시 `403 Forbidden` 이 반환된다.
+- [ ] 미승인 사용자가 로그인해도 데이터 API에 접근할 수 없다.
+- [ ] Spring Security 설정 파일에 각 엔드포인트별 권한 규칙이 명시되어 있다.
+- [ ] 프론트엔드 역할 검사 코드와 서버 권한 설정이 일치한다.
+- [ ] **개발자 검토 완료** ☐
+
+---
+
+## 4. 트랜잭션 (Transaction) 적용
+
+### 배경
+현재 Firebase는 문서 단위 쓰기를 사용하며, 여러 컬렉션에 동시에 쓰는 경우 원자성이 보장되지 않습니다.
+(예: 사례 삭제 + 활동 로그 기록이 동시에 실패하면 로그가 남지 않는 문제)
+Spring Boot + JPA 전환 후에는 `@Transactional`로 원자성을 보장해야 합니다.
+
+### 규칙
+- 데이터를 **등록/수정/삭제**하는 모든 Service 메서드에는 `@Transactional`을 적용한다.
+- **조회 전용** 메서드에는 `@Transactional(readOnly = true)`를 적용한다.
+- 트랜잭션 범위는 Service 레이어에서 관리하며, Controller나 Repository에서 직접 트랜잭션을 열지 않는다.
+- 여러 테이블에 걸친 작업(예: 사례 저장 + 활동 로그 기록)은 반드시 하나의 트랜잭션으로 묶는다.
+
+### 트랜잭션이 필요한 주요 작업
+| 작업 | 트랜잭션 범위 |
+|------|--------------|
+| 사례 등록 | 사례 INSERT + 활동 로그 INSERT |
+| 사례 수정 | 사례 UPDATE + 활동 로그 INSERT |
+| 사례 삭제 | 사례 DELETE + 활동 로그 INSERT |
+| 전체 삭제 | 모든 사례 DELETE + 활동 로그 INSERT |
+
+### ✅ PASS 판정 기준 체크리스트
+- [ ] 모든 쓰기 Service 메서드에 `@Transactional`이 선언되어 있다.
+- [ ] 조회 전용 메서드에 `@Transactional(readOnly = true)`가 선언되어 있다.
+- [ ] 쓰기 도중 오류 발생 시 데이터가 부분적으로만 저장되지 않고 롤백된다.
+- [ ] Controller나 Repository 레이어에 트랜잭션 어노테이션이 남용되지 않는다.
+- [ ] **개발자 검토 완료** ☐
+
+---
+
+## 5. 민감정보 노출 통제
+
+### 배경
+현재 코드에서 `compensationAmount`(보상금액)와 `details`(품의 링크 포함 상세 내용)는
+로그인한 모든 사용자에게 노출됩니다.
+이 정보는 사내 민감 정보이므로 역할에 따라 접근을 통제해야 합니다.
+
+### 민감 필드 목록
+| 필드명 | 민감도 | 접근 허용 범위 |
+|--------|--------|--------------|
+| `compensationAmount` (보상금액) | 높음 | ADMIN만 실제 값 조회 가능 |
+| `details` (품의 링크 포함) | 높음 | ADMIN만 실제 URL 조회 가능 |
+| `complainant` (신청인 성명) | 중간 | ADMIN, MANAGER |
+| `actorEmail` (활동 로그 이메일) | 중간 | ADMIN만 조회 가능 |
+
+### 규칙
+- 서버에서 응답 DTO를 생성할 때, MANAGER 역할에게는 민감 필드를 마스킹하거나 제외한다.
+- 민감 필드 마스킹은 클라이언트 처리가 아닌 **서버에서 처리**한다.
+- 마스킹 표현: 보상금액은 `null` 또는 `-1`, 품의 링크는 `"[권한 필요]"` 반환.
+- 활동 로그는 ADMIN만 조회 가능하도록 API 접근 자체를 차단한다.
+
+### ✅ PASS 판정 기준 체크리스트
+- [ ] MANAGER 계정으로 사례 목록 조회 시 보상금액이 마스킹되어 반환된다.
+- [ ] MANAGER 계정으로 사례 조회 시 품의 링크(URL)가 마스킹되어 반환된다.
+- [ ] 마스킹 처리가 클라이언트가 아닌 서버 응답 DTO에서 이루어진다.
+- [ ] 활동 로그 API는 ADMIN 이외 접근 시 `403` 응답을 반환한다.
+- [ ] **개발자 검토 완료** ☐
+
+---
+
+## 공통 보안 금지 사항
+
+- API Key, JWT Secret, DB 비밀번호를 코드나 git에 포함하지 않는다.
+- 로그에 비밀번호, Access Token, 주민번호, 개인정보를 출력하지 않는다.
+- SQL Injection 방지를 위해 JPA `@Query`에서 파라미터는 반드시 바인딩 변수(`:param`)를 사용한다.
+- 운영 환경에서는 Spring Boot `debug` 모드를 반드시 비활성화한다.
