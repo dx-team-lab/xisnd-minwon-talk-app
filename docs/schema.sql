@@ -12,6 +12,33 @@ CREATE TABLE tb_role_master (
   UNIQUE KEY uk_role_code (role_code)
 );
 
+-- [신규] Firebase users 컬렉션 → MySQL 전환
+-- login_id: 로그인 식별자, email: 실제 로그인 수단
+-- password_hash: BCrypt 단방향 해시 저장 (평문 저장 절대 금지)
+CREATE TABLE tb_user_master (
+  user_master_id  BIGINT        NOT NULL AUTO_INCREMENT COMMENT 'PK',
+  firebase_id     VARCHAR(100)  NULL     COMMENT 'Firebase UID (마이그레이션용)',
+  login_id        VARCHAR(100)  NOT NULL COMMENT '로그인 식별자',
+  password_hash   VARCHAR(255)  NOT NULL COMMENT 'BCrypt 해시값 (평문 저장 절대 금지)',
+  email           VARCHAR(255)  NOT NULL COMMENT '이메일 (실제 로그인 수단)',
+  display_name    VARCHAR(100)  NULL     COMMENT '화면 표시명 (Firebase displayName)',
+  name            VARCHAR(100)  NULL     COMMENT '실명 (Firebase name)',
+  approved_yn     CHAR(1)       NOT NULL DEFAULT 'N' COMMENT '관리자 승인 여부',
+  use_yn          CHAR(1)       NOT NULL DEFAULT 'Y',
+  deleted_yn      CHAR(1)       NOT NULL DEFAULT 'N',
+  deleted_at      DATETIME      NULL,
+  deleted_by      VARCHAR(100)  NULL,
+  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by      VARCHAR(100)  NULL,
+  updated_by      VARCHAR(100)  NULL,
+  PRIMARY KEY (user_master_id),
+  UNIQUE KEY uk_login_id (login_id),
+  INDEX idx_user_email (email),
+  INDEX idx_user_approved (approved_yn),
+  INDEX idx_user_deleted_use (deleted_yn, use_yn)
+);
+
 -- [변경] tb_user_role.role_code 대신 role_id FK 사용
 -- [변경] FK 실제 적용
 CREATE TABLE tb_user_role (
@@ -132,8 +159,29 @@ CREATE TABLE tb_site_complaint (
   CONSTRAINT fk_site_complaint_site FOREIGN KEY (site_id) REFERENCES tb_site(site_id)
 );
 
--- [확정] ID 연결 방식으로 확정: action_plan_id FK 적용
--- [확정] plan_title은 마이그레이션 임시 보관용으로만 유지, 데이터 이관 완료 후 제거 예정
+-- [신규] Firebase actionPlanLinks 컬렉션 → MySQL 전환
+-- 유형(다중)은 tb_action_plan_type으로 정규화, 지역/단계는 tb_response_plan_v2에 있음
+-- tb_site_complaint_response_plan, tb_action_plan_type의 FK 참조 대상
+CREATE TABLE tb_action_plan (
+  action_plan_id  BIGINT        NOT NULL AUTO_INCREMENT COMMENT 'PK',
+  firebase_id     VARCHAR(100)  NULL     COMMENT 'Firebase 문서 ID (마이그레이션용)',
+  plan_title      VARCHAR(500)  NOT NULL COMMENT '조치방안명',
+  share_point_url VARCHAR(2000) NULL     COMMENT 'SharePoint 문서 링크',
+  use_yn          CHAR(1)       NOT NULL DEFAULT 'Y',
+  deleted_yn      CHAR(1)       NOT NULL DEFAULT 'N',
+  deleted_at      DATETIME      NULL,
+  deleted_by      VARCHAR(100)  NULL,
+  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by      VARCHAR(100)  NULL,
+  updated_by      VARCHAR(100)  NULL,
+  PRIMARY KEY (action_plan_id),
+  INDEX idx_action_plan_deleted_use (deleted_yn, use_yn)
+);
+
+-- [확정 Q3] tb_action_plan은 tb_response_guide와 DB FK로 직접 연결하지 않음.
+--          공통 유형 코드(tb_action_plan_type)로만 간접 연관. guide_id FK 없음.
+-- [확정] plan_title = 조치방안명 (정식 컬럼, 유지). Firebase actionPlanLinks.title 매핑.
 -- [주의] tb_action_plan이 먼저 생성되어야 FK 제약조건이 적용됩니다 (실행 순서 확인 필요)
 CREATE TABLE tb_site_complaint_response_plan (
   complaint_response_plan_id BIGINT NOT NULL AUTO_INCREMENT,
@@ -251,6 +299,28 @@ CREATE TABLE tb_response_plan_v2 (
   PRIMARY KEY (response_plan_v2_id),
   INDEX idx_response_plan_v2_region_stage (region_code, stage_code),
   INDEX idx_response_plan_v2_deleted_use (deleted_yn, use_yn)
+);
+
+-- [신규] Firebase references 컬렉션 → MySQL 전환
+-- 파일(양식/예시)은 tb_reference_file(file_type: FORM/EXAMPLE)로 분리
+-- when/who/why는 SQL 예약어 충돌 방지를 위해 컬럼명 변경
+CREATE TABLE tb_reference (
+  reference_id    BIGINT        NOT NULL AUTO_INCREMENT COMMENT 'PK',
+  firebase_id     VARCHAR(100)  NULL     COMMENT 'Firebase 문서 ID (마이그레이션용)',
+  title           VARCHAR(500)  NOT NULL COMMENT '구분 (문서 제목)',
+  when_to_use     TEXT          NULL     COMMENT '언제 사용하나요?',
+  who_writes      VARCHAR(500)  NULL     COMMENT '누가 작성하나요?',
+  why_written     TEXT          NULL     COMMENT '왜 작성하나요? (중요성)',
+  use_yn          CHAR(1)       NOT NULL DEFAULT 'Y',
+  deleted_yn      CHAR(1)       NOT NULL DEFAULT 'N',
+  deleted_at      DATETIME      NULL,
+  deleted_by      VARCHAR(100)  NULL,
+  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by      VARCHAR(100)  NULL,
+  updated_by      VARCHAR(100)  NULL,
+  PRIMARY KEY (reference_id),
+  INDEX idx_reference_deleted_use (deleted_yn, use_yn)
 );
 
 -- [변경] file_url NOT NULL
