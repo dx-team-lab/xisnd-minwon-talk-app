@@ -1,8 +1,7 @@
 package com.minwon.platform.domain.user.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -14,7 +13,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "tb_user_master")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class UserMaster {
 
     @Id
@@ -45,12 +46,15 @@ public class UserMaster {
     private String name;
 
     // 관리자 승인 여부 (미승인 사용자는 데이터 접근 불가)
+    @Builder.Default
     @Column(name = "approved_yn", columnDefinition = "CHAR(1)", nullable = false)
     private String approvedYn = "N";
 
+    @Builder.Default
     @Column(name = "use_yn", columnDefinition = "CHAR(1)", nullable = false)
     private String useYn = "Y";
 
+    @Builder.Default
     @Column(name = "deleted_yn", columnDefinition = "CHAR(1)", nullable = false)
     private String deletedYn = "N";
 
@@ -81,5 +85,23 @@ public class UserMaster {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 사용자 생성 팩토리 메서드.
+     * passwordHash는 반드시 BCrypt 해시값이어야 한다. 평문을 넘기면 안 된다.
+     */
+    public static UserMaster create(String loginId, String passwordHash, String email, String displayName) {
+        return UserMaster.builder()
+                .loginId(loginId)
+                .passwordHash(passwordHash)
+                .email(email)
+                .displayName(displayName)
+                .approvedYn("Y")
+                .useYn("Y")
+                .deletedYn("N")
+                .createdBy("system")
+                .updatedBy("system")
+                .build();
     }
 }
