@@ -33,6 +33,10 @@ public class SecurityConfig {
                 // TODO: Phase 3.2-c에서 JWT 인증 필터로 교체, Phase 3.2-d에서 권한 제어 추가.
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // 로그인 API: 인증 없이 접근 가능 (명시적 허용)
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        // Swagger UI: Phase 3.2-c 이후 JWT 필터 추가 시에도 접근 가능하도록 명시
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // TODO: Phase 3.2-c에서 JWT 인증 필터로 교체, Phase 3.2-d에서 권한 제어 추가.
                         .anyRequest().permitAll()
                 );

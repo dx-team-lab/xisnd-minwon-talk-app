@@ -21,6 +21,12 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+jwt:
+  # .env 의 JWT_SECRET 에서 주입 (Base64 인코딩된 HMAC-SHA 키). 코드에 절대 하드코딩 금지.
+  secret: ${JWT_SECRET}
+  # Access Token 만료시간: 3600000ms = 1시간
+  access-token-expiration-ms: 3600000
+
 logging:
   level:
     root: INFO

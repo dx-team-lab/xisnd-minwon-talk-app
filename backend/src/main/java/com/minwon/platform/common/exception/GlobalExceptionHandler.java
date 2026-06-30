@@ -39,6 +39,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("INVALID_INPUT", message));
     }
 
+    /** 인증/인가 예외 — 401(로그인 실패), 403(미승인 사용자) */
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthException(AuthException e) {
+        // 보안 정책: 비밀번호, 토큰 등 민감 정보는 로그에 남기지 않는다
+        log.warn("인증/인가 예외 발생: code={}, status={}", e.getCode(), e.getHttpStatus());
+        return ResponseEntity
+                .status(e.getHttpStatus())
+                .body(ApiResponse.error(e.getCode(), e.getMessage()));
+    }
+
     /** 예상치 못한 서버 내부 오류 */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
