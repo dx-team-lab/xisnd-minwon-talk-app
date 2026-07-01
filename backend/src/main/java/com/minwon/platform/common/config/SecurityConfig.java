@@ -1,52 +1,67 @@
 package com.minwon.platform.common.config;
 
+import com.minwon.platform.common.security.JwtAuthenticationEntryPoint;
+import com.minwon.platform.common.security.JwtAuthenticationFilter;
+import com.minwon.platform.common.security.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Spring Security 기본 설정.
- *
- * [임시 설정 — Phase 3.2-a]
- * 현재는 JWT 인증 로직이 없으므로 모든 요청을 허용한다.
- * TODO: Phase 3.2-c에서 JWT 인증 필터로 교체, Phase 3.2-d에서 권한 제어 추가.
+ * Spring Security 설정.
+ * JWT 기반 Stateless 인증: 세션 미사용, 쿠키 기반 인증 없음.
+ * 인증 실패 시 Spring 기본 로그인 페이지 대신 JSON 401을 반환한다.
  */
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    /**
-     * HTTP 보안 필터 체인.
-     *
-     * 임시 설정: 모든 요청 허용(permitAll) + CSRF 비활성화.
-     * TODO: Phase 3.2-c에서 JWT 인증 필터로 교체, Phase 3.2-d에서 권한 제어 추가.
-     */
+    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // REST API는 세션 기반 CSRF 보호가 불필요하다 (JWT로 대체 예정)
-                // TODO: Phase 3.2-c에서 JWT 인증 필터로 교체, Phase 3.2-d에서 권한 제어 추가.
+                // REST API는 CSRF 토큰 불필요 (JWT로 인증하며 세션 미사용)
                 .csrf(AbstractHttpConfigurer::disable)
+                // 세션을 생성하거나 사용하지 않음 — JWT로 상태를 관리
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 로그인 API: 인증 없이 접근 가능 (명시적 허용)
+                        // 로그인 API: 인증 없이 접근 가능
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        // Swagger UI: Phase 3.2-c 이후 JWT 필터 추가 시에도 접근 가능하도록 명시
+                        // API 문서: 개발 편의상 허용
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        // TODO: Phase 3.2-c에서 JWT 인증 필터로 교체, Phase 3.2-d에서 권한 제어 추가.
-                        .anyRequest().permitAll()
+                        // 헬스 체크: 모니터링 도구에서 인증 없이 호출
+                        .requestMatchers("/api/health").permitAll()
+                        // 그 외 모든 요청은 유효한 JWT 토큰 필수
+                        .anyRequest().authenticated()
+                )
+                // 인증 실패(토큰 없음/유효하지 않음) → JSON 401 반환 (Spring 기본 리다이렉트 방지)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                )
+                // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 실행
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class
                 );
+
         return http.build();
     }
 
     /**
      * BCrypt 비밀번호 해시 인코더.
-     * 비밀번호는 이 인코더를 통해 단방향 해시로 저장된다. 평문 저장은 절대 금지.
-     * Phase 3.2-b 로그인 API, Phase 3.2-c JWT 인증 서비스에서 주입하여 사용한다.
+     * 비밀번호는 단방향 해시로만 저장. 평문 저장 금지.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
