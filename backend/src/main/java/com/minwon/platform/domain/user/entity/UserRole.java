@@ -2,6 +2,7 @@ package com.minwon.platform.domain.user.entity;
 
 import com.minwon.platform.domain.role.entity.RoleMaster;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "tb_user_role")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserRole {
 
     @Id
@@ -51,5 +52,14 @@ public class UserRole {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    /** 사용자-역할 매핑 생성 팩토리 메서드 */
+    public static UserRole create(UserMaster userMaster, RoleMaster roleMaster) {
+        UserRole userRole = new UserRole();
+        userRole.userMaster = userMaster;
+        userRole.roleMaster = roleMaster;
+        userRole.useYn = "Y";
+        return userRole;
     }
 }

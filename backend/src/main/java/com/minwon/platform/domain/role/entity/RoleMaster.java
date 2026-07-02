@@ -50,4 +50,14 @@ public class RoleMaster {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    /** 역할 생성 팩토리 메서드 */
+    public static RoleMaster create(String roleCode, String roleName, int sortOrder) {
+        RoleMaster roleMaster = new RoleMaster();
+        roleMaster.roleCode = roleCode;
+        roleMaster.roleName = roleName;
+        roleMaster.sortOrder = sortOrder;
+        roleMaster.useYn = "Y";
+        return roleMaster;
+    }
 }

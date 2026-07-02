@@ -27,6 +27,12 @@ jwt:
   # Access Token 만료시간: 3600000ms = 1시간
   access-token-expiration-ms: 3600000
 
+cors:
+  # 허용 Origin 목록. 여러 개는 쉼표 구분: "http://localhost:3000,https://prod.example.com"
+  # 운영 배포 시 .env 의 CORS_ALLOWED_ORIGINS 에 실제 도메인을 설정한다.
+  # allowedOrigins("*") 절대 사용 금지.
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
 logging:
   level:
     root: INFO
