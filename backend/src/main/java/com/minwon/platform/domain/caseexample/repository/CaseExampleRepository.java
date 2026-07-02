@@ -7,6 +7,9 @@ import java.util.List;
 
 public interface CaseExampleRepository extends JpaRepository<CaseExample, Long> {
 
-    // use_yn='Y' + deleted_yn='N' 인 사례만 등록일 내림차순으로 조회
+    /**
+     * 목록 조회 — 자식 컬렉션(caseExampleTypes, caseExampleRequests)은 @BatchSize로 N+1 방지.
+     * 엔티티에 @BatchSize(size=100)이 설정되어 있어 컬렉션 접근 시 IN절 배치 쿼리가 자동 실행됨.
+     */
     List<CaseExample> findAllByUseYnAndDeletedYnOrderByCreatedAtDesc(String useYn, String deletedYn);
 }
