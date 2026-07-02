@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -47,6 +48,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(e.getHttpStatus())
                 .body(ApiResponse.error(e.getCode(), e.getMessage()));
+    }
+
+    /**
+     * 존재하지 않는 경로 요청 — Spring 6의 NoHandlerFoundException 후속 예외.
+     * GlobalExceptionHandler가 없으면 Exception.class 폴백에 걸려 500이 되므로 명시적으로 처리.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException e) {
+        log.warn("존재하지 않는 경로 요청: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("NOT_FOUND", "요청한 경로를 찾을 수 없습니다."));
     }
 
     /** 예상치 못한 서버 내부 오류 */

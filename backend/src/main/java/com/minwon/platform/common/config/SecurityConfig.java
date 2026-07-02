@@ -71,6 +71,8 @@ public class SecurityConfig {
                         // 현장 데이터 CRUD: ADMIN, MANAGER 모두 허용
                         .requestMatchers("/api/v1/sites/**")
                             .hasAnyRole("ADMIN", "MANAGER")
+                        // 사례 조회: 인증된 사용자(MANAGER, ADMIN) 허용 — 역할 세분화·마스킹은 3.2-d 검토 후 적용
+                        .requestMatchers("/api/v1/case-examples/**").authenticated()
                         // 그 외 모든 요청은 유효한 JWT 토큰 필수
                         .anyRequest().authenticated()
                 )
