@@ -384,3 +384,53 @@ CREATE TABLE tb_activity_log (
   INDEX idx_activity_log_actor_email (actor_email),
   INDEX idx_activity_log_target (target_table, target_pk)
 );
+
+-- [신규 Phase 3.5-W] tb_case_example 배열 정규화 테이블
+-- 유형(type)과 요청내용(request)을 정규화 분리. tb_case_example FK 실제 적용.
+
+CREATE TABLE tb_case_example_type (
+  case_example_type_id BIGINT NOT NULL AUTO_INCREMENT,
+  case_example_id      BIGINT NOT NULL COMMENT 'tb_case_example FK',
+  type_code            VARCHAR(100) NOT NULL COMMENT 'COMPLAINT_TYPE 코드',
+  created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (case_example_type_id),
+  UNIQUE KEY uk_case_example_type (case_example_id, type_code),
+  INDEX idx_case_example_type_code (type_code),
+  CONSTRAINT fk_case_example_type_case
+    FOREIGN KEY (case_example_id) REFERENCES tb_case_example(case_example_id)
+);
+
+CREATE TABLE tb_case_example_request (
+  case_example_request_id BIGINT NOT NULL AUTO_INCREMENT,
+  case_example_id         BIGINT NOT NULL COMMENT 'tb_case_example FK',
+  request_content         TEXT NOT NULL COMMENT '요청 내용',
+  sort_order              INT NOT NULL DEFAULT 0 COMMENT '입력 순서',
+  created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (case_example_request_id),
+  INDEX idx_case_example_request_case (case_example_id),
+  CONSTRAINT fk_case_example_request_case
+    FOREIGN KEY (case_example_id) REFERENCES tb_case_example(case_example_id)
+);
+-- [신규 Phase 3.4-SS] tb_system_setting — 시스템 설정 (키-값 방식)
+-- Firebase settings 컬렉션(system/procedure/references 문서의 자유 필드) → 키-값 행으로 전환
+-- 예: MAIN_IMAGE_URL, MAIN_PAGE_THEME, IS_PROCESS_MENU_ENABLED
+-- 접근 권한: ADMIN 전용 (security.md 3번 권한표)
+CREATE TABLE tb_system_setting (
+  system_setting_id BIGINT       NOT NULL AUTO_INCREMENT COMMENT 'PK',
+  setting_key       VARCHAR(100) NOT NULL COMMENT '설정 키 (예: MAIN_IMAGE_URL)',
+  setting_value     TEXT         NULL     COMMENT '설정 값 (URL/테마명/true·false 등 문자열 저장)',
+  description       VARCHAR(500) NULL     COMMENT '설정 용도 설명',
+  use_yn            CHAR(1)      NOT NULL DEFAULT 'Y',
+  deleted_yn        CHAR(1)      NOT NULL DEFAULT 'N',
+  deleted_at        DATETIME     NULL,
+  deleted_by        VARCHAR(100) NULL,
+  created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by        VARCHAR(100) NULL,
+  updated_by        VARCHAR(100) NULL,
+  PRIMARY KEY (system_setting_id),
+  UNIQUE KEY uk_system_setting_key (setting_key),
+  INDEX idx_system_setting_deleted_use (deleted_yn, use_yn)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

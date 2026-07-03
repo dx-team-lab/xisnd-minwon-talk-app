@@ -65,8 +65,9 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // 헬스 체크: 모니터링 도구에서 인증 없이 호출
                         .requestMatchers("/api/health").permitAll()
-                        // ADMIN 전용: 사용자 관리, 활동로그 조회, 시스템 설정
-                        .requestMatchers("/api/v1/users/**", "/api/v1/activity-logs/**", "/api/v1/admin/**")
+                        // ADMIN 전용: 사용자 관리, 활동로그 조회, 시스템 설정 (security.md 3번 권한표: MANAGER ❌)
+                        .requestMatchers("/api/v1/users/**", "/api/v1/activity-logs/**", "/api/v1/admin/**",
+                                "/api/v1/system-settings/**")
                             .hasRole("ADMIN")
                         // 현장 데이터 CRUD: ADMIN, MANAGER 모두 허용
                         .requestMatchers("/api/v1/sites/**")
