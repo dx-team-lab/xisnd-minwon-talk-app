@@ -1,6 +1,7 @@
 package com.minwon.platform.domain.site.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -9,11 +10,12 @@ import java.time.LocalDateTime;
 /**
  * tb_site_complaint_similar_case (현장 민원 유사 사례) 테이블 매핑 엔티티
  * 유사 사례는 별도 테이블 FK 없이 case_text / case_url 직접 저장 방식
+ * 현장 민원 1건에 여러 건이 붙는 1:N 자식 테이블. SiteComplaint 저장 시 cascade로 함께 저장된다.
  */
 @Entity
 @Table(name = "tb_site_complaint_similar_case")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SiteComplaintSimilarCase {
 
     @Id
@@ -50,5 +52,15 @@ public class SiteComplaintSimilarCase {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    /** 유사사례 생성 팩토리 메서드. sortOrder는 입력 순서(0-based)로 지정한다. */
+    public static SiteComplaintSimilarCase of(SiteComplaint siteComplaint, String caseText, String caseUrl, int sortOrder) {
+        SiteComplaintSimilarCase entity = new SiteComplaintSimilarCase();
+        entity.siteComplaint = siteComplaint;
+        entity.caseText = caseText;
+        entity.caseUrl = caseUrl;
+        entity.sortOrder = sortOrder;
+        return entity;
     }
 }
