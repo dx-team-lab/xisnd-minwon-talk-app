@@ -52,7 +52,7 @@ export default function Header() {
     ...(systemSettings?.isProcessMenuEnabled
       ? [{ name: '민원 대응 절차', href: '/dashboard/process' }]
       : []),
-    { name: '유사사례', href: '/dashboard/guides' },
+    { name: '유사사례 및 대응방안', href: '/dashboard/guides' },
     { name: '참고자료', href: '/dashboard/references' },
   ];
 

@@ -20,7 +20,7 @@ export default function HomeTypeB() {
       bgColor: "bg-[#F9F9F8]", // Assuming backgrounds are part of images or we just use white/gray
     },
     {
-      title: "유사사례",
+      title: "유사사례 및 대응방안",
       description: "당사 사례, 분쟁조정위원회 사례등",
       imgSrc: card2Img,
       href: "/dashboard/guides",
@@ -38,7 +38,7 @@ export default function HomeTypeB() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Header />
-      
+
       <main className="flex-1 container mx-auto px-4 py-20 flex flex-col items-center">
         {/* Header Area */}
         <div className="text-center max-w-3xl mb-16 space-y-6">
@@ -50,7 +50,7 @@ export default function HomeTypeB() {
               현장에서 발생한 민원에 대해 바로 적용할 수 있는 대응 방법을 알려드립니다.
             </p>
             <p className="text-slate-500 font-medium">
-              예방부터 단계별 해결절차, 유사사례, 관련 법령까지 한 곳에서 확인하세요
+              예방부터 단계별 해결절차, 유사사례 및 대응방안, 관련 법령까지 한 곳에서 확인하세요
             </p>
           </div>
         </div>
@@ -58,21 +58,21 @@ export default function HomeTypeB() {
         {/* 3-Card Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 w-full max-w-6xl">
           {cards.map((card, index) => (
-            <div 
+            <div
               key={index}
               onClick={() => router.push(card.href)}
               className="group cursor-pointer rounded-[32px] bg-[#F9F9F8] p-10 hover:shadow-2xl hover:shadow-slate-200 transition-all duration-300 transform hover:-translate-y-2 border border-slate-100 flex flex-col items-center text-center space-y-8"
             >
               {/* Image/Icon Area */}
               <div className="w-full flex justify-center w-full mb-4">
-                 <Image
-                    src={card.imgSrc}
-                    alt={card.title}
-                    width={200}
-                    height={200}
-                    className="w-full h-40 object-contain group-hover:scale-[1.02] transition-transform"
-                    unoptimized
-                 />
+                <Image
+                  src={card.imgSrc}
+                  alt={card.title}
+                  width={200}
+                  height={200}
+                  className="w-full h-40 object-contain group-hover:scale-[1.02] transition-transform"
+                  unoptimized
+                />
               </div>
 
               {/* Text Content */}
