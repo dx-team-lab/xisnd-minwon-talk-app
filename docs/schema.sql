@@ -434,3 +434,28 @@ CREATE TABLE tb_system_setting (
   UNIQUE KEY uk_system_setting_key (setting_key),
   INDEX idx_system_setting_deleted_use (deleted_yn, use_yn)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [신규 Phase 3.4-INQ] tb_inquiry — 문의 (Firebase inquiries 컬렉션 전환)
+-- 권한: 등록(POST)은 MANAGER+ADMIN, 조회/수정/삭제는 ADMIN 전용 (SecurityConfig 메서드별 규칙)
+-- 문의자 정보는 클라이언트 입력이 아닌 서버(JWT)에서 기록. 원문(content)은 수정 불가, PUT은 답변/상태 변경 전용.
+CREATE TABLE tb_inquiry (
+  inquiry_id     BIGINT       NOT NULL AUTO_INCREMENT COMMENT 'PK',
+  firebase_id    VARCHAR(100) NULL     COMMENT 'Firebase 문서 ID (마이그레이션용)',
+  content        TEXT         NOT NULL COMMENT '문의 내용',
+  status_code    VARCHAR(100) NOT NULL DEFAULT 'PENDING' COMMENT 'INQUIRY_STATUS 코드 (PENDING/RESOLVED)',
+  inquirer_name  VARCHAR(100) NOT NULL COMMENT '문의자 loginId (서버에서 기록)',
+  inquirer_email VARCHAR(255) NULL     COMMENT '문의자 이메일 (개인정보, 3.2-d UserDetails 연동 후 기록)',
+  reply_content  TEXT         NULL     COMMENT '답변 내용',
+  replied_at     DATETIME     NULL     COMMENT '답변 일시',
+  replied_by     VARCHAR(100) NULL     COMMENT '답변자 loginId',
+  deleted_yn     CHAR(1)      NOT NULL DEFAULT 'N',
+  deleted_at     DATETIME     NULL,
+  deleted_by     VARCHAR(100) NULL,
+  created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by     VARCHAR(100) NULL,
+  updated_by     VARCHAR(100) NULL,
+  PRIMARY KEY (inquiry_id),
+  INDEX idx_inquiry_status (status_code, deleted_yn),
+  INDEX idx_inquiry_inquirer (inquirer_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

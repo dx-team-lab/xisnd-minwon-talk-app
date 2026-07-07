@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -68,6 +69,12 @@ public class SecurityConfig {
                         // ADMIN 전용: 사용자 관리, 활동로그 조회, 시스템 설정 (security.md 3번 권한표: MANAGER ❌)
                         .requestMatchers("/api/v1/users/**", "/api/v1/activity-logs/**", "/api/v1/admin/**",
                                 "/api/v1/system-settings/**")
+                            .hasRole("ADMIN")
+                        // 문의: HTTP 메서드별 권한 — 등록(POST)은 MANAGER+ADMIN, 조회/수정/삭제는 ADMIN 전용.
+                        // 순서 주의: 더 구체적인 POST 규칙이 아래 일반(/**) 규칙보다 먼저 와야 한다.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/inquiries")
+                            .hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/api/v1/inquiries/**")
                             .hasRole("ADMIN")
                         // 현장 데이터 CRUD: ADMIN, MANAGER 모두 허용
                         .requestMatchers("/api/v1/sites/**")

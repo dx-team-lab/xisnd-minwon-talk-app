@@ -45,3 +45,14 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// 서버 실행(bootRun) 시 로그를 UTF-8로 출력 (윈도우 콘솔 한글 깨짐 방지)
+tasks.named('bootRun') {
+    jvmArgs = ['-Dfile.encoding=UTF-8', '-Dconsole.encoding=UTF-8']
+}
+
+// 자바 소스 컴파일 시 인코딩을 UTF-8로 고정
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
