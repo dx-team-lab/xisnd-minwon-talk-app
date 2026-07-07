@@ -26,6 +26,21 @@ import { ConfirmModal } from '@/components/common/ConfirmModal';
 
 const PROTECTED_EMAILS = ['eom1986@xisnd.com', 'jin38@xisnd.com'];
 
+function formatLastLoginAt(value: any): string | null {
+  if (!value) return null;
+  try {
+    const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d} ${h}:${min}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function UserManagementPage() {
   const { user, isUserLoading } = useUser();
   const db = useFirestore();
@@ -239,6 +254,7 @@ export default function UserManagementPage() {
                   <TableHead className="font-bold text-slate-700">구분</TableHead>
                   <TableHead className="font-bold text-slate-700">이름</TableHead>
                   <TableHead className="font-bold text-slate-700">이메일</TableHead>
+                  <TableHead className="font-bold text-slate-700">최종 접속</TableHead>
                   <TableHead className="font-bold text-slate-700 text-center">승인 상태</TableHead>
                   <TableHead className="font-bold text-slate-700 text-center">관리자 권한</TableHead>
                   <TableHead className="font-bold text-slate-700 text-center">관리</TableHead>
@@ -297,10 +313,15 @@ export default function UserManagementPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-slate-600">{u.email}</TableCell>
+                      <TableCell className="text-sm">
+                        {formatLastLoginAt(u.lastLoginAt)
+                          ? <span className="text-slate-600">{formatLastLoginAt(u.lastLoginAt)}</span>
+                          : <span className="text-slate-400">기록 없음</span>}
+                      </TableCell>
                       <TableCell className="text-center">
                         <div className="flex flex-col items-center gap-2">
-                          <Switch 
-                            checked={!!u.approved} 
+                          <Switch
+                            checked={!!u.approved}
                             onCheckedChange={() => toggleApproval(u.id, !!u.approved)}
                             disabled={!isCurrentUserAdmin && u.id !== user?.uid}
                           />
@@ -348,7 +369,7 @@ export default function UserManagementPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-slate-500">
+                    <TableCell colSpan={7} className="text-center py-12 text-slate-500">
                       등록된 사용자가 없습니다.
                     </TableCell>
                   </TableRow>

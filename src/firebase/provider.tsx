@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore } from 'firebase/firestore';
+import { Firestore, Timestamp, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
@@ -57,6 +57,34 @@ export interface UserHookResult { // Renamed from UserAuthHookResult for consist
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
 /**
+ * 하루 1회만 lastLoginAt 을 Firestore 에 기록한다.
+ * - 문서가 없으면(신규 가입 직후 등) 건너뜀 → 기존 가입 흐름을 깨지 않음
+ * - 이미 오늘 기록된 경우 쓰기 없이 종료
+ */
+async function recordLastLoginIfNeeded(firestoreDb: Firestore, uid: string): Promise<void> {
+  const userRef = doc(firestoreDb, 'users', uid);
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists()) return; // 신규 가입 직후 문서 미생성 상태, 건너뜀
+
+  const lastLoginAt = snap.data()?.lastLoginAt as Timestamp | undefined;
+  if (lastLoginAt) {
+    const last = lastLoginAt.toDate();
+    const now = new Date();
+    // 로컬 기준 연·월·일이 모두 같으면 오늘 이미 기록된 것 → 스킵
+    if (
+      last.getFullYear() === now.getFullYear() &&
+      last.getMonth() === now.getMonth() &&
+      last.getDate() === now.getDate()
+    ) {
+      return;
+    }
+  }
+
+  await setDoc(userRef, { lastLoginAt: serverTimestamp() }, { merge: true });
+}
+
+/**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
  */
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
@@ -85,6 +113,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       auth,
       (firebaseUser) => { // Auth state determined
         setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
+        if (firebaseUser && firestore) {
+          // 로그인 상태 변화 시 최종 접속 시각 기록 (하루 1회, 실패해도 앱 동작에 영향 없음)
+          recordLastLoginIfNeeded(firestore, firebaseUser.uid).catch(e => {
+            console.error('[lastLoginAt] 업데이트 실패:', e);
+          });
+        }
       },
       (error) => { // Auth listener error
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
