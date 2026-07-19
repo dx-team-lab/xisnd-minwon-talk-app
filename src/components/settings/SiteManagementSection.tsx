@@ -12,13 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Trash2, Edit2, PlusCircle, RotateCcw, Save, X } from 'lucide-react';
+import { Loader2, Trash2, Edit2, PlusCircle, RotateCcw, Save, X, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { Site, SiteImage, SiteComplaint, UserProfile } from '@/lib/types';
 import { compressImageToBase64 } from '@/lib/imageUtils';
 import { logActivity } from '@/lib/activity-logs';
 import { useDoc } from '@/firebase';
+import { useSiteManagementExcel } from './useSiteManagementExcel';
 
 
 
@@ -69,6 +70,8 @@ export default function SiteManagementSection() {
 
   const sitesQuery = useMemoFirebase(() => query(collection(db, 'sites'), orderBy('order', 'asc')), [db]);
   const { data: sites, isLoading } = useCollection(sitesQuery);
+
+  const { isDownloading, handleSiteExcelDownload } = useSiteManagementExcel();
 
   const handleInputChange = (field: keyof Site, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -396,6 +399,17 @@ export default function SiteManagementSection() {
             {editingId ? <Edit2 className="h-5 w-5 text-amber-500" /> : <PlusCircle className="h-5 w-5 text-primary" />}
             현장 {editingId ? '수정' : '신규 추가'}
           </CardTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleSiteExcelDownload(sites as any)}
+            disabled={isDownloading}
+            className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+          >
+            {isDownloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            엑셀 다운로드
+          </Button>
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
